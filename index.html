@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zuzana Ševčovičová | Dev-Portfolio</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg: #0d1117;          
+            --card-bg: #161b22;
+            --dark-green: #b43f82;
+            --accent-green: #746cf0;
+            --projects-accent: #f3eef1;
+            --link-green: #d6589d; 
+            --text-main: #e6edf3;
+            --text-muted: #8b949e;
+            --border: #30363d;
+            --mono: 'JetBrains Mono', monospace;
+            
+            /* Mouse position variables */
+            --mouse-x: 50%;
+            --mouse-y: 50%;
+        }
+
+        /* --- Custom Scroll Progress Bar --- */
+        #scroll-progress {
+            position: fixed; top: 0; left: 0; height: 3px;
+            background: var(--accent-green);
+            z-index: 2000; width: 0%;
+            box-shadow: 0 0 10px var(--accent-green);
+        }
+
+        /* --- DNA SIDEBAR DECORATION --- */
+        .dna-sidebar {
+            position: fixed; left: 10px; top: 0; bottom: 0;
+            width: 20px; font-family: var(--mono); font-size: 20px;
+            color: var(--dark-green); opacity: 0.3; overflow: hidden;
+            user-select: none; pointer-events: none; z-index: 0;
+            writing-mode: vertical-rl; text-orientation: upright;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            /* The base gradient for the animation */
+            background: radial-gradient(
+                800px circle at var(--mouse-x) var(--mouse-y),
+                rgba(189, 63, 178, 0.096),
+                transparent 85%
+            ), var(--bg);
+            background-attachment: fixed;
+        }
+
+        /* --- Link Styling --- */
+        a {
+            color: var(--link-green);
+            text-decoration: none;
+            transition: 0.2s;
+            font-family: var(--mono);
+            font-size: 0.85rem;
+        }
+
+        a:hover {
+            color: var(--text-main);
+            text-decoration: underline;
+        }
+
+        header {
+            padding: 100px 10%;
+            border-bottom: 1px solid var(--border);
+            position: relative;
+            z-index: 1;
+        }
+
+        .code-snippet {
+            font-family: var(--mono);
+            color: var(--accent-green);
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .typewriter { font-family: var(--mono); color: var(--text-muted); min-height: 1.5em; }
+
+        h1 { font-size: 3rem; font-weight: 600; letter-spacing: -1px; }
+
+        .container { display: grid; grid-template-columns: 2fr 1fr; gap: 50px; padding: 60px 10%; position: relative; z-index: 1;}
+
+        h2 { 
+            font-family: var(--mono); 
+            font-size: 1.3rem; 
+            color: var(--accent-green); 
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+        }
+        h2::before { content: "> "; }
+
+        .section-block { margin-bottom: 60px; }
+
+        /* --- ENHANCED EXP ITEMS --- */
+        .exp-item {
+            position: relative; padding: 20px; padding-left: 35px;
+            border-left: 1px solid var(--border); margin-bottom: 30px;
+            background: transparent; border-radius: 0 8px 8px 0;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .exp-item:hover {
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 1px solid var(--accent-green);
+            transform: translateX(10px);
+        }
+
+        .exp-item::before {
+            content: ""; position: absolute; left: -5px; top: 25px; width: 9px; height: 9px;
+            background: var(--accent-green); border-radius: 50%;
+            box-shadow: 0 0 0 rgba(226, 142, 194, 0.4);
+            transition: box-shadow 0.3s;
+        }
+
+        .exp-item:hover::before { box-shadow: 0 0 15px var(--accent-green); }
+
+        .exp-item h3 { font-size: 1.2rem; color: var(--text-main); margin-bottom: 4px; }
+        .exp-item .meta { font-family: var(--mono); font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; }
+
+        /* Base Tag Style */
+        .tag {
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            padding: 5px 12px;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+
+        /* Category Colors */
+        .tag.lang  { border-color: #4facfe; color: #4facfe; } /* Blue for Languages */
+        .tag.bio   { border-color: #43e97b; color: #43e97b; } /* Green for Bio Tools */
+        .tag.ml    { border-color: #fa709a; color: #fa709a; } /* Pink for ML/Math */
+        .tag.infra { border-color: #f6d365; color: #f6d365; } /* Yellow for Infrastructure */
+
+        /* Glowing Hover Effects */
+        .tag.lang:hover  { background: #4facfe; color: #000; box-shadow: 0 0 15px #4facfe; }
+        .tag.bio:hover   { background: #43e97b; color: #000; box-shadow: 0 0 15px #43e97b; }
+        .tag.ml:hover    { background: #fa709a; color: #000; box-shadow: 0 0 15px #fa709a; }
+        .tag.infra:hover { background: #f6d365; color: #000; box-shadow: 0 0 15px #f6d365; }
+
+        .tags { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 15px 10px; 
+            margin-top: 15px; 
+        }
+
+        #contact { position: relative; height: 550px; width: 100%; border-top: 1px solid var(--border); margin-top: 50px; }
+        #map { height: 100%; width: 100%; filter: grayscale(1) invert(0.9) opacity(0.2); }
+        .contact-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 1000; background: rgba(22, 27, 34, 0.85); border: 1px solid var(--border);
+            padding: 30px; border-radius: 12px; display: flex; align-items: center;
+            gap: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); backdrop-filter: blur(15px); min-width: 450px;
+        }
+
+        .contact-photo { width: 110px; height: 110px; border-radius: 50%; border: 2px solid var(--accent-green); object-fit: cover; }
+        .contact-info h4 { font-family: var(--mono); color: var(--accent-green); margin-bottom: 8px; }
+        .contact-info p { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 4px; }
+        
+        @media (max-width: 900px) {
+            .container { grid-template-columns: 1fr; }
+            .contact-overlay { flex-direction: column; text-align: center; min-width: 90%; }
+        }
+    </style>
+</head>
+
+
+<body>
+
+    <div id="scroll-progress"></div>
+    <div class="dna-sidebar" id="dna">ATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCATGCTGCATGCATGCATGCATGCATGCATGC</div>
+
+
+    <header>
+        <div class="code-snippet">const scientist = new Researcher("Zuzana");</div>
+        <h1>Zuzana Ševčovičová</h1>
+        
+        <div class="code-snippet" style="margin-top: 10px; font-size: 0.85rem; opacity: 0.9;">
+            <!-- Yellow "print" -->
+            <span style="color: #f6d365;">print</span>(<span style="color: #43e97b;">"<!-- Dynamic Green Text Starts Here --><span id="typewriter"></span>"</span>)
+        </div>
+    </header>
+
+    <div class="container">
+
+        <main>
+            <section class="section-block">
+                <h2>experience.log</h2>
+                <div class="exp-item">
+                    <div class="meta">2023 - PRESENT // PRAGUE, CZ</div>
+                    <h3>Institute of Molecular Genetics (CAS)</h3>
+                    <p style="font-size: 0.95rem; color: var(--text-muted);">Working on high-performance computing clusters for multi-modal transcriptomic data analysis.</p>
+                </div>
+            </section>
+
+            <section class="section-block">
+                <h2>education.init</h2>
+                <div class="exp-item">
+                    <div class="meta">CURRENT // MS BIOINFORMATICS</div>
+                    <h3>Charles University</h3>
+                    <p style="font-size: 0.95rem; color: var(--text-muted);">Thesis focus: Multi-scale spatial transcriptomic integration in non-melanoma cancers.</p>
+                </div>
+                <div class="exp-item">
+                    <div class="meta">2021 - 2024 // BS MOLECULAR BIOLOGY</div>
+                    <h3>Charles University</h3>
+                    <p style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 8px;">Benchmarked 7 integration algorithms (scVI, Seurat) for single-cell transcriptomics.</p>
+                    <a href="https://github.com/Sevcoviz/BachelorThesis/blob/main/bc_Sevcovicova.pdf" target="_blank"><i class="fa fa-file-pdf"></i> View Bachelor Thesis</a>
+                </div>
+            </section>
+
+            <section class="section-block">
+                <h2>certificates.sh</h2>
+                <div class="exp-item">
+                    <div class="meta">IMG & ELIXIR CZECH REPUBLIC</div>
+                    <h3>Single Cell Transcriptomics</h3>
+                    <a href="https://drive.google.com/file/d/1nR5sb16r4xZjil7K54xVQMV4aRgwjEoW/view?usp=sharing" target="_blank"><i class="fa fa-certificate"></i> Certificate</a>
+                </div>
+                <div class="exp-item">
+                    <div class="meta">CHARLES UNIVERSITY</div>
+                    <h3>Deep Learning & Neural Networks</h3>
+                    <a href="https://drive.google.com/file/d/14J0nCqhjxzqQNC3QUXCHHeTyk-bSuy54/view?usp=sharing" target="_blank"><i class="fa fa-certificate"></i> Certificate</a>
+                </div>
+                <div class="exp-item">
+                    <div class="meta">UNIVERSITY OF HELSINKI</div>
+                    <h3>Elements of AI</h3>
+                    <a href="https://certificates.mooc.fi/validate/g83n3t9jayh" target="_blank"><i class="fa fa-certificate"></i> Certificate</a>
+                </div>
+            </section>
+        </main>
+
+        <aside>
+            <section class="section-block">
+                <h2>stack.json</h2>
+                <div class="tags">
+                    <!-- Languages -->
+                    <span class="tag lang">Python</span>
+                    <span class="tag lang">R</span>
+                    
+                    <!-- Machine Learning -->
+                    <span class="tag ml">Pandas</span>
+                    <span class="tag ml">Numpy</span>
+                    <span class="tag ml">Matplotlib</span>
+                    <span class="tag ml">PyTorch</span>
+                    <span class="tag ml">scikit-learn</span>
+                    
+                    <!-- Bioinformatics -->
+                    <span class="tag bio">Seurat</span>
+                    <span class="tag bio">Scanpy</span>
+                    <span class="tag bio">Bioconductor</span>
+                    <span class="tag bio">scVI</span>
+                    <span class="tag bio">PyMol</span>
+                    
+                    <!-- Infrastructure -->
+                    <span class="tag infra">Slurm</span>
+                    <span class="tag infra">Bash</span>
+                    <span class="tag infra">Linux</span>
+                    <span class="tag infra">Git</span>
+                    <span class="tag infra">HTML5</span>
+                    <span class="tag infra">CSS3</span>
+                </div>
+            </section>
+
+            <section class="section-block">
+                <h2>projects.md</h2>
+                <div class="exp-item" style="border: none; padding-left: 0;">
+                    <h3 style="color: var(--projects-accent)">Drug design</h3>
+                    <div class="meta">4EU+ EUROPEAN UNIVERSITY ALLIANCE</div>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">Identification of inhibitors of SLC6A20 SIT1</p>
+                    <span style="font-size: 10px; color: var(--projects-accent); font-family: var(--mono);">[STATUS: IN_PROGRESS]</span>
+                </div>
+                <div class="exp-item" style="border: none; padding-left: 0;">
+                    <h3 style="color: var(--projects-accent)">NF-kB Dynamics</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">ODE modeling of immune regulation & sensitivity analysis.</p>
+                    <a href="https://github.com/Sevcoviz/Model_of_NF-kB_dynamics_in_the_cell.git" target="_blank"><i class="fab fa-github"></i> Repository</a>
+                </div>
+                <div class="exp-item" style="border: none; padding-left: 0;">
+                    <h3 style="color: var(--projects-accent)">Spotify-scRNAseq</h3>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">Analysis for user music embeddings.</p>
+                    <a href="https://tobiasmarek.github.io/statistics/spotify_project/index.html" target="_blank"><i class="fa fa-external-link-alt"></i> User Interface</a>
+                </div>
+            </section>
+        </aside>
+    </div>
+
+    <div id="contact">
+        <div id="map"></div>
+        <div class="contact-overlay">
+            <img src="DSC_5950-Edit.JPG" alt="Zuzana" class="contact-photo">
+            <div class="contact-info">
+                <h4>get_in_touch()</h4>
+                <p><i class="fa fa-map-marker"></i> Based in Prague, Czechia</p>
+                <p><i class="fa fa-envelope"></i> <a href="mailto:sevcovic.zuzana@gmail.com">sevcovic.zuzana@gmail.com</a></p>
+                <p><i class="fa fa-phone"></i> +420 607 168 900</p>
+                <p><i class="fab fa-github"></i> <a href="https://github.com/Sevcoviz" target="_blank">github.com/Sevcoviz</a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+
+        // 1. SCROLL PROGRESS & DNA ANIMATION
+        window.onscroll = function() {
+            let winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+            let height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            let scrolled = (winScroll / height) * 100;
+            document.getElementById("scroll-progress").style.width = scrolled + "%";
+            
+            // Subtle DNA shift on scroll
+            document.getElementById("dna").style.transform = `translateY(-${winScroll * 0.2}px)`;
+        };
+
+        // 2. MOUSE GLOW
+        window.addEventListener('mousemove', e => {
+            document.body.style.setProperty('--mouse-x', e.clientX + 'px');
+            document.body.style.setProperty('--mouse-y', e.clientY + 'px');
+        });
+
+        // --- TYPEWRITER EFFECT ---
+        const text = "Bioinformatician with keen interest in molecular biology and deep learning";
+        let i = 0;
+
+        function type() {
+            const target = document.getElementById("typewriter");
+            if (target && i < text.length) {
+                // Add characters one by one
+                target.innerHTML += text.charAt(i);
+                i++;
+                // Speed set to 40ms as requested
+                setTimeout(type, 40);
+            }
+        }
+
+        // Start the animation
+        type();
+
+        // MAP LOGIC
+        var map = L.map('map', {
+            center: [50.0755, 14.4378],
+            zoom: 13,
+            zoomControl: false,
+            dragging: false,
+            scrollWheelZoom: false
+        });
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '©OpenStreetMap'
+        }).addTo(map);
+
+        L.circle([50.0755, 14.4378], {
+            color: '#4f772d',
+            fillColor: '#4f772d',
+            fillOpacity: 0.5,
+            radius: 500
+        }).addTo(map);
+    </script>
+</body>
+</html>
