@@ -193,6 +193,47 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0; }
         }
+
+
+        /* --- Download Button Styling --- */
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 25px;
+            padding: 12px 24px;
+            border: 1px solid var(--accent-green);
+            border-radius: 4px;
+            background: rgba(116, 108, 240, 0.05); /* Subtle tint of your accent color */
+            color: var(--accent-green);
+            font-family: var(--mono);
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: lowercase;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .download-btn:hover {
+            background: var(--accent-green);
+            color: var(--bg);
+            box-shadow: 0 0 25px var(--accent-green);
+            transform: translateY(-2px);
+            text-decoration: none; /* Override default link hover */
+        }
+
+        .download-btn i {
+            font-size: 1rem;
+        }
+
+        /* Specific adjustment for the contact section button */
+        .contact-info .download-btn {
+            margin-top: 15px;
+            padding: 8px 16px;
+            font-size: 0.8rem;
+        }
+
+
     </style>
 </head>
 
@@ -211,6 +252,11 @@
             <!-- Yellow "print" -->
             <span style="color: #f6d365;">print</span>(<span style="color: #43e97b;">"<!-- Dynamic Green Text Starts Here --><span id="typewriter"></span>"</span>)
         </div>
+
+        <!-- NEW DOWNLOAD BUTTON -->
+        <a href="Zuzana_Sevcovicova_CV.pdf" download class="download-btn">
+            <i class="fa fa-download"></i> ./get_cv_full.pdf
+        </a>
     </header>
 
     <div class="container">
@@ -340,6 +386,10 @@
                 <p><i class="fa fa-envelope"></i> <a href="mailto:sevcovic.zuzana@gmail.com">sevcovic.zuzana@gmail.com</a></p>
                 <p><i class="fa fa-phone"></i> +420 607 168 900</p>
                 <p><i class="fab fa-github"></i> <a href="https://github.com/Sevcoviz" target="_blank">github.com/Sevcoviz</a></p>
+                    <!-- ADDED TO CONTACT OVERLAY -->
+                <a href="Zuzana_Sevcovicova_CV.pdf" download class="download-btn">
+                    <i class="fa fa-file-pdf"></i> ./get_cv_full.pdf
+                </a>
             </div>
         </div>
     </div>
@@ -347,132 +397,40 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
 
-        // // 1. SCROLL PROGRESS & DNA ANIMATION
-        // window.onscroll = function() {
-        //     let winScroll = document.body.scrollTop || document.documentElement.scrollTop;
-        //     let height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-        //     let scrolled = (winScroll / height) * 100;
-        //     document.getElementById("scroll-progress").style.width = scrolled + "%";
-            
-        //     // Subtle DNA shift on scroll
-        //     document.getElementById("dna").style.transform = `translateY(-${winScroll * 0.2}px)`;
-        // };
-
-        // // 2. MOUSE GLOW
-        // window.addEventListener('mousemove', e => {
-        //     document.body.style.setProperty('--mouse-x', e.clientX + 'px');
-        //     document.body.style.setProperty('--mouse-y', e.clientY + 'px');
-        // });
-
-        // // --- TYPEWRITER EFFECT ---
-        // const text = "Bioinformatician with keen interest in molecular biology and deep learning";
-        // let i = 0;
-
-        // function type() {
-        //     const target = document.getElementById("typewriter");
-        //     if (target && i < text.length) {
-        //         // Add characters one by one
-        //         target.innerHTML += text.charAt(i);
-        //         i++;
-        //         // Speed set to 40ms as requested
-        //         setTimeout(type, 40);
-        //     }
-        // }
-
-        // // Start the animation
-        // type();
-
-            // --- 1. CORE TYPEWRITER ENGINE ---
-        const speed = 75; // Typing speed in milliseconds
-
-        function typeElement(element, text) {
-            let charIndex = 0;
-            element.classList.add('typing-active'); // Show blinking cursor
-
-            function step() {
-                if (charIndex < text.length) {
-                    element.innerHTML += text.charAt(charIndex);
-                    charIndex++;
-                    setTimeout(step, speed);
-                } else {
-                    element.classList.remove('typing-active'); // Remove cursor when done
-                }
-            }
-            step();
-        }
-
-        // --- 2. AUTOMATIC HEADER DETECTION & OBSERVATION ---
-        const headers = document.querySelectorAll('.section-block h2');
-        
-        const observerOptions = {
-            threshold: 0.5, // Trigger when 50% of the header is visible
-            rootMargin: "0px 0px -50px 0px"
-        };
-
-        const headerObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const target = entry.target;
-                    const originalText = target.getAttribute('data-text');
-                    
-                    // Start typing
-                    typeElement(target, originalText);
-                    
-                    // Stop observing this element so it only types once
-                    observer.unobserve(target);
-                }
-            });
-        }, observerOptions);
-
-        // Initial setup: Store text and clear headers
-        headers.forEach(h => {
-            h.setAttribute('data-text', h.innerText); // Save "experience.log" etc.
-            h.innerText = ""; // Clear it for typing
-            headerObserver.observe(h); // Tell the observer to watch this header
-        });
-
-        // --- 3. THE MAIN HEADER TYPEWRITER (print snippet) ---
-        const mainText = "Bioinformatician with keen interest in molecular biology and deep learning";
-        let mainIndex = 0;
-
-        function typeMainHeader() {
-            const target = document.getElementById("typewriter");
-            if (target && mainIndex < mainText.length) {
-                target.innerHTML += mainText.charAt(mainIndex);
-                mainIndex++;
-                setTimeout(typeMainHeader, 20);
-            }
-        }
-
-        // --- 4. GLOBAL INIT ---
-        window.onload = function() {
-            // Start the main name-snippet typewriter
-            typeMainHeader();
-
-            // Initialize Map
-            var map = L.map('map', { 
-                center: [50.0755, 14.4378], 
-                zoom: 13, 
-                zoomControl: false, 
-                dragging: false, 
-                scrollWheelZoom: false 
-            });
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-        };
-
-        // --- 5. SCROLL & MOUSE EFFECTS ---
+        // 1. SCROLL PROGRESS & DNA ANIMATION
         window.onscroll = function() {
             let winScroll = document.body.scrollTop || document.documentElement.scrollTop;
             let height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
-            document.getElementById("scroll-progress").style.width = (winScroll / height * 100) + "%";
+            let scrolled = (winScroll / height) * 100;
+            document.getElementById("scroll-progress").style.width = scrolled + "%";
+            
+            // Subtle DNA shift on scroll
             document.getElementById("dna").style.transform = `translateY(-${winScroll * 0.2}px)`;
         };
 
+        // 2. MOUSE GLOW
         window.addEventListener('mousemove', e => {
             document.body.style.setProperty('--mouse-x', e.clientX + 'px');
             document.body.style.setProperty('--mouse-y', e.clientY + 'px');
         });
 
+        // --- TYPEWRITER EFFECT ---
+        const text = "Bioinformatician with keen interest in molecular biology and deep learning";
+        let i = 0;
+
+        function type() {
+            const target = document.getElementById("typewriter");
+            if (target && i < text.length) {
+                // Add characters one by one
+                target.innerHTML += text.charAt(i);
+                i++;
+                // Speed set to 40ms as requested
+                setTimeout(type, 40);
+            }
+        }
+
+        // Start the animation
+        type();
 
         // MAP LOGIC
         var map = L.map('map', {
