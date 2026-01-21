@@ -1,0 +1,1855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kera Project | Analysis Portal</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --primary: #1e293b;
+            --accent: #3b82f6;
+            --sig-bg: #f0fdf4;
+            --sig-text: #166534;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg-color); color: var(--primary); }
+        .header { background: white; padding: 30px; border-bottom: 1px solid var(--border); text-align: center; }
+        h1 { font-size: 1.5rem; margin-bottom: 5px; }
+        .subtitle { color: #64748b; font-size: 0.9rem; }
+        .main-container { max-width: 1400px; margin: 0 auto; padding: 30px; }
+        
+        /* Overview PCA section */
+        .overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
+        .card { background: white; border-radius: 8px; border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; }
+        .card-header { padding: 10px 15px; background: #f1f5f9; font-size: 0.75rem; font-weight: bold; color: #475569; text-transform: uppercase; }
+        .card-body { padding: 15px; text-align: center; }
+        .card-body img { max-width: 100%; height: auto; border-radius: 4px; cursor: pointer; }
+
+        .explorer-layout { display: grid; grid-template-columns: 420px 1fr; gap: 30px; align-items: start; }
+        
+        /* List column */
+        .list-column { position: sticky; top: 20px; height: calc(100vh - 100px); display: flex; flex-direction: column; }
+        .tabs-nav { display: flex; gap: 5px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
+        .tab-btn { padding: 6px 12px; background: #e2e8f0; border: none; border-radius: 15px; font-size: 0.8rem; cursor: pointer; white-space: nowrap; }
+        .tab-btn.active { background: var(--accent); color: white; }
+        .search-input { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 15px; }
+        .items-list-container { flex-grow: 1; overflow-y: auto; background: white; border: 1px solid var(--border); border-radius: 8px; }
+        
+        /* Row items */
+        .item-row { padding: 12px 15px; border-bottom: 1px solid #f1f5f9; display: flex; flex-direction: column; cursor: pointer; }
+        .item-row:hover { background: #f8fafc; }
+        .item-row.selected { background: #eff6ff; border-left: 4px solid var(--accent); }
+        .item-top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 4px; }
+        .item-name { font-family: monospace; font-weight: bold; color: var(--accent); font-size: 0.95rem; }
+        .item-comment { font-size: 0.75rem; color: #94a3b8; font-style: italic; }
+        
+        .new-tab-icon { text-decoration: none; color: #cbd5e1; font-weight: bold; margin-left: 8px; font-size: 1rem; transition: color 0.2s; }
+        .new-tab-icon:hover { color: var(--accent); }
+
+        /* Viewer window */
+        .viewer-column { position: sticky; top: 20px; background: white; border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 20px; text-align: center; min-height: 600px; display: flex; flex-direction: column; }
+        .viewer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9; }
+        #viewerTitle { font-size: 1.1rem; font-weight: bold; color: var(--primary); }
+        .open-full-btn { font-size: 0.75rem; color: var(--accent); text-decoration: none; border: 1px solid var(--accent); padding: 4px 10px; border-radius: 5px; font-weight: 500; }
+        .open-full-btn:hover { background: var(--accent); color: white; }
+        
+        .viewer-body { flex-grow: 1; display: flex; align-items: center; justify-content: center; }
+        #mainViewerImg { max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 4px; display: none; }
+        .placeholder-text { color: #94a3b8; font-style: italic; }
+        
+        .badge-sig { font-size: 0.6rem; background: var(--sig-bg); color: var(--sig-text); padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body>
+<header class="header">
+    <h1>Keratoacanthoma Project</h1>
+    <p class="subtitle">Cancer associated fibroblast | Analysis</p>
+</header>
+<main class="main-container">
+    <div class="overview-grid">
+        <div class="card">
+            <div class="card-header">PCA: Samples</div>
+            <div class="card-body"><img src="01_PCA/01_PCA_Samples_sub_DE_list.png" onclick="viewImage('01_PCA/01_PCA_Samples_sub_DE_list.png', 'Samples PCA')"></div>
+        </div>
+        <div class="card">
+            <div class="card-header">PCA: Top Genes</div>
+            <div class="card-body"><img src="01_PCA/01_PCA_Genes_sub_DE_list.png" onclick="viewImage('01_PCA/01_PCA_Genes_sub_DE_list.png', 'Genes PCA')"></div>
+        </div>
+    </div>
+    <div class="explorer-layout">
+        <div class="list-column">
+            <nav class="tabs-nav"><button class="tab-btn active" onclick="openTab(event, '01_PCA')">PCA</button>
+<button class="tab-btn " onclick="openTab(event, '02_Volcano')">Volcano Plots</button>
+<button class="tab-btn " onclick="openTab(event, '03_Heatmaps')">Heatmaps</button>
+<button class="tab-btn " onclick="openTab(event, '04_Boxplots')">Gene Expression plots</button></nav>
+            
+        <div id="01_PCA" class="tab-content active">
+            <input type="text" class="search-input" placeholder="Search PCA..." onkeyup="filterList(this, '01_PCA-list')">
+            <div class="items-list-container">
+                <ul style="list-style:none" id="01_PCA-list">
+                    
+                <li class="item-row" onclick="viewImage('01_PCA/01_PCA_Genes_sub_DE_list.png', '01_PCA_Genes_sub_DE_list', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">01_PCA_Genes_sub_DE_list</span>
+                        <div>
+                            
+                            <a href="01_PCA/01_PCA_Genes_sub_DE_list.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment">Gene 'Universe' plot; genes colored by the sample group where they peak</div>
+                </li>
+                <li class="item-row" onclick="viewImage('01_PCA/01_PCA_Samples_sub_DE_list.png', '01_PCA_Samples_sub_DE_list', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">01_PCA_Samples_sub_DE_list</span>
+                        <div>
+                            
+                            <a href="01_PCA/01_PCA_Samples_sub_DE_list.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment">Sample separation based exclusively on significantly deregulated genes</div>
+                </li>
+                <li class="item-row" onclick="viewImage('01_PCA/01_PCA_after_BC_all_genes.png', '01_PCA_after_BC_all_genes', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">01_PCA_after_BC_all_genes</span>
+                        <div>
+                            
+                            <a href="01_PCA/01_PCA_after_BC_all_genes.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment">Clustering after ComBat correction for Sentrix ID batch effects</div>
+                </li>
+                <li class="item-row" onclick="viewImage('01_PCA/01_PCA_after_BC_top500_IQR.png', '01_PCA_after_BC_top500_IQR', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">01_PCA_after_BC_top500_IQR</span>
+                        <div>
+                            
+                            <a href="01_PCA/01_PCA_after_BC_top500_IQR.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment">Variance-driven clustering using the top 500 most variable genes (IQR)</div>
+                </li>
+                <li class="item-row" onclick="viewImage('01_PCA/01_PCA_before_BC_all_genes.png', '01_PCA_before_BC_all_genes', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">01_PCA_before_BC_all_genes</span>
+                        <div>
+                            
+                            <a href="01_PCA/01_PCA_before_BC_all_genes.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment">Raw unsupervised clustering; shows initial variance and batch effects</div>
+                </li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="02_Volcano" class="tab-content ">
+            <input type="text" class="search-input" placeholder="Search Volcano Plots..." onkeyup="filterList(this, '02_Volcano-list')">
+            <div class="items-list-container">
+                <ul style="list-style:none" id="02_Volcano-list">
+                    
+                <li class="item-row" onclick="viewImage('02_Volcano/03_Volcano_DF_KAF_S_vs_DF_KAF_I.png', '03_Volcano_DF_KAF_S_vs_DF_KAF_I', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">03_Volcano_DF_KAF_S_vs_DF_KAF_I</span>
+                        <div>
+                            
+                            <a href="02_Volcano/03_Volcano_DF_KAF_S_vs_DF_KAF_I.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('02_Volcano/03_Volcano_DF_SCC_vs_DF_KAF_I.png', '03_Volcano_DF_SCC_vs_DF_KAF_I', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">03_Volcano_DF_SCC_vs_DF_KAF_I</span>
+                        <div>
+                            
+                            <a href="02_Volcano/03_Volcano_DF_SCC_vs_DF_KAF_I.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('02_Volcano/03_Volcano_DF_SCC_vs_DF_KAF_S.png', '03_Volcano_DF_SCC_vs_DF_KAF_S', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">03_Volcano_DF_SCC_vs_DF_KAF_S</span>
+                        <div>
+                            
+                            <a href="02_Volcano/03_Volcano_DF_SCC_vs_DF_KAF_S.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('02_Volcano/03_Volcano_KAF_I_vs_MatchedCtrl.png', '03_Volcano_KAF_I_vs_MatchedCtrl', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">03_Volcano_KAF_I_vs_MatchedCtrl</span>
+                        <div>
+                            
+                            <a href="02_Volcano/03_Volcano_KAF_I_vs_MatchedCtrl.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment">Induced Kera Fibroblasts vs matched Dermal Fibroblast controls</div>
+                </li>
+                <li class="item-row" onclick="viewImage('02_Volcano/03_Volcano_KAF_S_vs_KAF_I.png', '03_Volcano_KAF_S_vs_KAF_I', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">03_Volcano_KAF_S_vs_KAF_I</span>
+                        <div>
+                            
+                            <a href="02_Volcano/03_Volcano_KAF_S_vs_KAF_I.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment">Comparison between Sporadic and Induced Keratoacanthoma populations</div>
+                </li>
+                <li class="item-row" onclick="viewImage('02_Volcano/03_Volcano_KAF_S_vs_MatchedCtrl.png', '03_Volcano_KAF_S_vs_MatchedCtrl', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">03_Volcano_KAF_S_vs_MatchedCtrl</span>
+                        <div>
+                            
+                            <a href="02_Volcano/03_Volcano_KAF_S_vs_MatchedCtrl.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment">Sporadic Kera Fibroblasts vs matched Dermal Fibroblast controls</div>
+                </li>
+                <li class="item-row" onclick="viewImage('02_Volcano/03_Volcano_SCC_Effect_vs_KAF_Effect.png', '03_Volcano_SCC_Effect_vs_KAF_Effect', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">03_Volcano_SCC_Effect_vs_KAF_Effect</span>
+                        <div>
+                            
+                            <a href="02_Volcano/03_Volcano_SCC_Effect_vs_KAF_Effect.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment">Interaction analysis: Genes where the 'CAF-response' differs between SCC and KAF</div>
+                </li>
+                <li class="item-row" onclick="viewImage('02_Volcano/03_Volcano_SCC_Effect_vs_KAF_I_Effect.png', '03_Volcano_SCC_Effect_vs_KAF_I_Effect', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">03_Volcano_SCC_Effect_vs_KAF_I_Effect</span>
+                        <div>
+                            
+                            <a href="02_Volcano/03_Volcano_SCC_Effect_vs_KAF_I_Effect.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('02_Volcano/03_Volcano_SCC_Effect_vs_KAF_S_Effect.png', '03_Volcano_SCC_Effect_vs_KAF_S_Effect', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">03_Volcano_SCC_Effect_vs_KAF_S_Effect</span>
+                        <div>
+                            
+                            <a href="02_Volcano/03_Volcano_SCC_Effect_vs_KAF_S_Effect.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('02_Volcano/03_Volcano_SCC_vs_KAF_All.png', '03_Volcano_SCC_vs_KAF_All', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">03_Volcano_SCC_vs_KAF_All</span>
+                        <div>
+                            
+                            <a href="02_Volcano/03_Volcano_SCC_vs_KAF_All.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment">Direct comparison: SCC Fibroblasts vs all Keratoacanthoma Fibroblasts</div>
+                </li>
+                <li class="item-row" onclick="viewImage('02_Volcano/03_Volcano_SCC_vs_KAF_I.png', '03_Volcano_SCC_vs_KAF_I', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">03_Volcano_SCC_vs_KAF_I</span>
+                        <div>
+                            
+                            <a href="02_Volcano/03_Volcano_SCC_vs_KAF_I.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('02_Volcano/03_Volcano_SCC_vs_KAF_S.png', '03_Volcano_SCC_vs_KAF_S', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">03_Volcano_SCC_vs_KAF_S</span>
+                        <div>
+                            
+                            <a href="02_Volcano/03_Volcano_SCC_vs_KAF_S.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('02_Volcano/03_Volcano_SCC_vs_MatchedCtrl.png', '03_Volcano_SCC_vs_MatchedCtrl', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">03_Volcano_SCC_vs_MatchedCtrl</span>
+                        <div>
+                            
+                            <a href="02_Volcano/03_Volcano_SCC_vs_MatchedCtrl.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment">SCC Fibroblasts vs matched Dermal Fibroblast controls</div>
+                </li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="03_Heatmaps" class="tab-content ">
+            <input type="text" class="search-input" placeholder="Search Heatmaps..." onkeyup="filterList(this, '03_Heatmaps-list')">
+            <div class="items-list-container">
+                <ul style="list-style:none" id="03_Heatmaps-list">
+                    
+                <li class="item-row" onclick="viewImage('03_Heatmaps/04_Heatmap_DF_KAF_S_vs_DF_KAF_I.png', '04_Heatmap_DF_KAF_S_vs_DF_KAF_I', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">04_Heatmap_DF_KAF_S_vs_DF_KAF_I</span>
+                        <div>
+                            
+                            <a href="03_Heatmaps/04_Heatmap_DF_KAF_S_vs_DF_KAF_I.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('03_Heatmaps/04_Heatmap_DF_SCC_vs_DF_KAF_I.png', '04_Heatmap_DF_SCC_vs_DF_KAF_I', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">04_Heatmap_DF_SCC_vs_DF_KAF_I</span>
+                        <div>
+                            
+                            <a href="03_Heatmaps/04_Heatmap_DF_SCC_vs_DF_KAF_I.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('03_Heatmaps/04_Heatmap_DF_SCC_vs_DF_KAF_S.png', '04_Heatmap_DF_SCC_vs_DF_KAF_S', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">04_Heatmap_DF_SCC_vs_DF_KAF_S</span>
+                        <div>
+                            
+                            <a href="03_Heatmaps/04_Heatmap_DF_SCC_vs_DF_KAF_S.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('03_Heatmaps/04_Heatmap_KAF_I_vs_MatchedCtrl.png', '04_Heatmap_KAF_I_vs_MatchedCtrl', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">04_Heatmap_KAF_I_vs_MatchedCtrl</span>
+                        <div>
+                            
+                            <a href="03_Heatmaps/04_Heatmap_KAF_I_vs_MatchedCtrl.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment">Z-score signature of top DE genes in Induced Kera vs Matched Controls</div>
+                </li>
+                <li class="item-row" onclick="viewImage('03_Heatmaps/04_Heatmap_KAF_S_vs_KAF_I.png', '04_Heatmap_KAF_S_vs_KAF_I', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">04_Heatmap_KAF_S_vs_KAF_I</span>
+                        <div>
+                            
+                            <a href="03_Heatmaps/04_Heatmap_KAF_S_vs_KAF_I.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('03_Heatmaps/04_Heatmap_KAF_S_vs_MatchedCtrl.png', '04_Heatmap_KAF_S_vs_MatchedCtrl', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">04_Heatmap_KAF_S_vs_MatchedCtrl</span>
+                        <div>
+                            
+                            <a href="03_Heatmaps/04_Heatmap_KAF_S_vs_MatchedCtrl.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment">Z-score signature of top DE genes in Sporadic Kera vs Matched Controls</div>
+                </li>
+                <li class="item-row" onclick="viewImage('03_Heatmaps/04_Heatmap_SCC_Effect_vs_KAF_Effect.png', '04_Heatmap_SCC_Effect_vs_KAF_Effect', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">04_Heatmap_SCC_Effect_vs_KAF_Effect</span>
+                        <div>
+                            
+                            <a href="03_Heatmaps/04_Heatmap_SCC_Effect_vs_KAF_Effect.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment">Signature of genes showing distinct interaction effects between pathologies</div>
+                </li>
+                <li class="item-row" onclick="viewImage('03_Heatmaps/04_Heatmap_SCC_Effect_vs_KAF_I_Effect.png', '04_Heatmap_SCC_Effect_vs_KAF_I_Effect', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">04_Heatmap_SCC_Effect_vs_KAF_I_Effect</span>
+                        <div>
+                            
+                            <a href="03_Heatmaps/04_Heatmap_SCC_Effect_vs_KAF_I_Effect.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('03_Heatmaps/04_Heatmap_SCC_Effect_vs_KAF_S_Effect.png', '04_Heatmap_SCC_Effect_vs_KAF_S_Effect', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">04_Heatmap_SCC_Effect_vs_KAF_S_Effect</span>
+                        <div>
+                            
+                            <a href="03_Heatmaps/04_Heatmap_SCC_Effect_vs_KAF_S_Effect.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('03_Heatmaps/04_Heatmap_SCC_vs_KAF_All.png', '04_Heatmap_SCC_vs_KAF_All', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">04_Heatmap_SCC_vs_KAF_All</span>
+                        <div>
+                            
+                            <a href="03_Heatmaps/04_Heatmap_SCC_vs_KAF_All.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment">Expression profile of genes differentiating SCC from Kera populations</div>
+                </li>
+                <li class="item-row" onclick="viewImage('03_Heatmaps/04_Heatmap_SCC_vs_KAF_I.png', '04_Heatmap_SCC_vs_KAF_I', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">04_Heatmap_SCC_vs_KAF_I</span>
+                        <div>
+                            
+                            <a href="03_Heatmaps/04_Heatmap_SCC_vs_KAF_I.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('03_Heatmaps/04_Heatmap_SCC_vs_KAF_S.png', '04_Heatmap_SCC_vs_KAF_S', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">04_Heatmap_SCC_vs_KAF_S</span>
+                        <div>
+                            
+                            <a href="03_Heatmaps/04_Heatmap_SCC_vs_KAF_S.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="04_Boxplots" class="tab-content ">
+            <input type="text" class="search-input" placeholder="Search Gene Expression plots..." onkeyup="filterList(this, '04_Boxplots-list')">
+            <div class="items-list-container">
+                <ul style="list-style:none" id="04_Boxplots-list">
+                    
+                <li class="item-row" onclick="viewImage('04_Boxplots/ACTA2_sig.png', 'ACTA2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">ACTA2</span>
+                        <div>
+                            <span class="badge-sig">SIG</span>
+                            <a href="04_Boxplots/ACTA2_sig.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/ADAM23.png', 'ADAM23', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">ADAM23</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/ADAM23.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/ADAMTS1.png', 'ADAMTS1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">ADAMTS1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/ADAMTS1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/AGPAT9.png', 'AGPAT9', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">AGPAT9</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/AGPAT9.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/ALDH7A1.png', 'ALDH7A1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">ALDH7A1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/ALDH7A1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/APP.png', 'APP', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">APP</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/APP.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/ARHGAP23.png', 'ARHGAP23', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">ARHGAP23</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/ARHGAP23.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/ARID5B.png', 'ARID5B', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">ARID5B</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/ARID5B.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/ATF4.png', 'ATF4', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">ATF4</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/ATF4.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/AZIN1.png', 'AZIN1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">AZIN1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/AZIN1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/BEX1.png', 'BEX1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">BEX1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/BEX1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/BNIP3.png', 'BNIP3', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">BNIP3</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/BNIP3.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/C1orf198.png', 'C1orf198', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">C1orf198</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/C1orf198.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/C4orf31.png', 'C4orf31', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">C4orf31</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/C4orf31.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/C5orf13.png', 'C5orf13', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">C5orf13</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/C5orf13.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CALD1.png', 'CALD1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CALD1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/CALD1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CAND2.png', 'CAND2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CAND2</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/CAND2.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CAPG.png', 'CAPG', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CAPG</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/CAPG.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CCL13.png', 'CCL13', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CCL13</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/CCL13.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CCL2.png', 'CCL2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CCL2</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/CCL2.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CD70.png', 'CD70', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CD70</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/CD70.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CENTA1.png', 'CENTA1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CENTA1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/CENTA1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CERKL.png', 'CERKL', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CERKL</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/CERKL.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CHES1.png', 'CHES1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CHES1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/CHES1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CKLF.png', 'CKLF', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CKLF</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/CKLF.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/COL11A1_sig.png', 'COL11A1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">COL11A1</span>
+                        <div>
+                            <span class="badge-sig">SIG</span>
+                            <a href="04_Boxplots/COL11A1_sig.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/COL1A1_sig.png', 'COL1A1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">COL1A1</span>
+                        <div>
+                            <span class="badge-sig">SIG</span>
+                            <a href="04_Boxplots/COL1A1_sig.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/COL1A2_sig.png', 'COL1A2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">COL1A2</span>
+                        <div>
+                            <span class="badge-sig">SIG</span>
+                            <a href="04_Boxplots/COL1A2_sig.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/COL3A1.png', 'COL3A1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">COL3A1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/COL3A1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/COL6A1.png', 'COL6A1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">COL6A1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/COL6A1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/COL6A3.png', 'COL6A3', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">COL6A3</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/COL6A3.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CRIP1.png', 'CRIP1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CRIP1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/CRIP1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CRISPLD2.png', 'CRISPLD2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CRISPLD2</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/CRISPLD2.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CTHRC1.png', 'CTHRC1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CTHRC1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/CTHRC1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CXCL12_sig.png', 'CXCL12', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CXCL12</span>
+                        <div>
+                            <span class="badge-sig">SIG</span>
+                            <a href="04_Boxplots/CXCL12_sig.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CXCL14.png', 'CXCL14', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CXCL14</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/CXCL14.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CYR61.png', 'CYR61', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CYR61</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/CYR61.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/CYorf15A.png', 'CYorf15A', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">CYorf15A</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/CYorf15A.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/DCBLD2.png', 'DCBLD2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">DCBLD2</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/DCBLD2.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/DCN_sig.png', 'DCN', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">DCN</span>
+                        <div>
+                            <span class="badge-sig">SIG</span>
+                            <a href="04_Boxplots/DCN_sig.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/DDAH1.png', 'DDAH1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">DDAH1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/DDAH1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/DDIT4.png', 'DDIT4', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">DDIT4</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/DDIT4.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/DNLZ.png', 'DNLZ', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">DNLZ</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/DNLZ.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/DOK5.png', 'DOK5', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">DOK5</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/DOK5.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/EEF1A2.png', 'EEF1A2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">EEF1A2</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/EEF1A2.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/EIF1AY.png', 'EIF1AY', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">EIF1AY</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/EIF1AY.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/ELN.png', 'ELN', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">ELN</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/ELN.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/EPAS1.png', 'EPAS1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">EPAS1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/EPAS1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/F2R.png', 'F2R', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">F2R</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/F2R.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/FAP.png', 'FAP', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">FAP</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/FAP.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/FBLN1.png', 'FBLN1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">FBLN1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/FBLN1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/FGF13.png', 'FGF13', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">FGF13</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/FGF13.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/FILIP1.png', 'FILIP1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">FILIP1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/FILIP1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/FST.png', 'FST', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">FST</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/FST.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/FSTL1.png', 'FSTL1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">FSTL1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/FSTL1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/GEM.png', 'GEM', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">GEM</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/GEM.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/GPR128.png', 'GPR128', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">GPR128</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/GPR128.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/GREM1.png', 'GREM1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">GREM1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/GREM1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/HAND2.png', 'HAND2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">HAND2</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/HAND2.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/HTRA1.png', 'HTRA1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">HTRA1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/HTRA1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/IARS.png', 'IARS', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">IARS</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/IARS.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/IER3.png', 'IER3', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">IER3</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/IER3.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/IGFBP2.png', 'IGFBP2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">IGFBP2</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/IGFBP2.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/IL11_sig.png', 'IL11', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">IL11</span>
+                        <div>
+                            <span class="badge-sig">SIG</span>
+                            <a href="04_Boxplots/IL11_sig.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/IL1B_sig.png', 'IL1B', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">IL1B</span>
+                        <div>
+                            <span class="badge-sig">SIG</span>
+                            <a href="04_Boxplots/IL1B_sig.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/IL6_sig.png', 'IL6', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">IL6</span>
+                        <div>
+                            <span class="badge-sig">SIG</span>
+                            <a href="04_Boxplots/IL6_sig.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/ITGAV.png', 'ITGAV', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">ITGAV</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/ITGAV.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/ITGB1BP1.png', 'ITGB1BP1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">ITGB1BP1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/ITGB1BP1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/JARID1D.png', 'JARID1D', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">JARID1D</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/JARID1D.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/KCNMB1.png', 'KCNMB1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">KCNMB1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/KCNMB1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/KIAA1199.png', 'KIAA1199', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">KIAA1199</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/KIAA1199.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/KRT17.png', 'KRT17', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">KRT17</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/KRT17.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/KRT19.png', 'KRT19', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">KRT19</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/KRT19.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/KRT6A.png', 'KRT6A', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">KRT6A</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/KRT6A.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/KRT6B.png', 'KRT6B', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">KRT6B</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/KRT6B.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/LAMC2.png', 'LAMC2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">LAMC2</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/LAMC2.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/LAMP2.png', 'LAMP2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">LAMP2</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/LAMP2.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/LEPROT.png', 'LEPROT', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">LEPROT</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/LEPROT.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/LGALS3BP.png', 'LGALS3BP', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">LGALS3BP</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/LGALS3BP.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/LOC100133662.png', 'LOC100133662', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">LOC100133662</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/LOC100133662.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/LOC339535.png', 'LOC339535', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">LOC339535</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/LOC339535.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/LOC644774.png', 'LOC644774', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">LOC644774</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/LOC644774.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/LOC644928.png', 'LOC644928', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">LOC644928</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/LOC644928.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/LOC650215.png', 'LOC650215', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">LOC650215</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/LOC650215.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/LUM_sig.png', 'LUM', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">LUM</span>
+                        <div>
+                            <span class="badge-sig">SIG</span>
+                            <a href="04_Boxplots/LUM_sig.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/MAMDC2.png', 'MAMDC2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">MAMDC2</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/MAMDC2.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/MAPKAPK3.png', 'MAPKAPK3', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">MAPKAPK3</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/MAPKAPK3.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/MMP11_sig.png', 'MMP11', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">MMP11</span>
+                        <div>
+                            <span class="badge-sig">SIG</span>
+                            <a href="04_Boxplots/MMP11_sig.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/MMP9.png', 'MMP9', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">MMP9</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/MMP9.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/MTHFD2.png', 'MTHFD2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">MTHFD2</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/MTHFD2.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/MYH11.png', 'MYH11', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">MYH11</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/MYH11.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/MYL9.png', 'MYL9', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">MYL9</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/MYL9.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/NCAM1.png', 'NCAM1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">NCAM1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/NCAM1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/NDRG1.png', 'NDRG1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">NDRG1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/NDRG1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/NFIX.png', 'NFIX', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">NFIX</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/NFIX.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/NLGN1.png', 'NLGN1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">NLGN1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/NLGN1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/NRCAM.png', 'NRCAM', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">NRCAM</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/NRCAM.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/NRN1.png', 'NRN1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">NRN1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/NRN1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/PDGFRA.png', 'PDGFRA', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">PDGFRA</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/PDGFRA.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/PDGFRB_sig.png', 'PDGFRB', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">PDGFRB</span>
+                        <div>
+                            <span class="badge-sig">SIG</span>
+                            <a href="04_Boxplots/PDGFRB_sig.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/PDPN.png', 'PDPN', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">PDPN</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/PDPN.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/PGAM1.png', 'PGAM1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">PGAM1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/PGAM1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/PGF.png', 'PGF', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">PGF</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/PGF.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/PGM5.png', 'PGM5', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">PGM5</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/PGM5.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/POSTN_sig.png', 'POSTN', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">POSTN</span>
+                        <div>
+                            <span class="badge-sig">SIG</span>
+                            <a href="04_Boxplots/POSTN_sig.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/RGS7.png', 'RGS7', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">RGS7</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/RGS7.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/RHOU.png', 'RHOU', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">RHOU</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/RHOU.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/RNASET2.png', 'RNASET2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">RNASET2</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/RNASET2.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/RPL14.png', 'RPL14', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">RPL14</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/RPL14.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/RPS26.png', 'RPS26', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">RPS26</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/RPS26.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/RPS26L.png', 'RPS26L', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">RPS26L</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/RPS26L.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/RPS6KA2.png', 'RPS6KA2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">RPS6KA2</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/RPS6KA2.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/RUNX3.png', 'RUNX3', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">RUNX3</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/RUNX3.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/S100A10.png', 'S100A10', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">S100A10</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/S100A10.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/S100A13.png', 'S100A13', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">S100A13</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/S100A13.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/S100A3.png', 'S100A3', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">S100A3</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/S100A3.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/S100A4_sig.png', 'S100A4', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">S100A4</span>
+                        <div>
+                            <span class="badge-sig">SIG</span>
+                            <a href="04_Boxplots/S100A4_sig.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/SDF2L1.png', 'SDF2L1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">SDF2L1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/SDF2L1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/SDHALP1.png', 'SDHALP1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">SDHALP1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/SDHALP1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/SFRP4.png', 'SFRP4', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">SFRP4</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/SFRP4.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/SLC2A5.png', 'SLC2A5', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">SLC2A5</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/SLC2A5.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/SPARC.png', 'SPARC', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">SPARC</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/SPARC.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/STC2.png', 'STC2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">STC2</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/STC2.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/SULF1.png', 'SULF1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">SULF1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/SULF1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/TAGLN.png', 'TAGLN', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">TAGLN</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/TAGLN.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/THBS1.png', 'THBS1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">THBS1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/THBS1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/THY1_sig.png', 'THY1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">THY1</span>
+                        <div>
+                            <span class="badge-sig">SIG</span>
+                            <a href="04_Boxplots/THY1_sig.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/TMEM126B.png', 'TMEM126B', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">TMEM126B</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/TMEM126B.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/TMEM158.png', 'TMEM158', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">TMEM158</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/TMEM158.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/TNC.png', 'TNC', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">TNC</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/TNC.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/TOM1.png', 'TOM1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">TOM1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/TOM1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/TOMM34.png', 'TOMM34', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">TOMM34</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/TOMM34.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/TRNP1.png', 'TRNP1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">TRNP1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/TRNP1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/TTC3.png', 'TTC3', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">TTC3</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/TTC3.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/UCHL1.png', 'UCHL1', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">UCHL1</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/UCHL1.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/VIM_sig.png', 'VIM', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">VIM</span>
+                        <div>
+                            <span class="badge-sig">SIG</span>
+                            <a href="04_Boxplots/VIM_sig.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/ZIC2.png', 'ZIC2', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">ZIC2</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/ZIC2.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                <li class="item-row" onclick="viewImage('04_Boxplots/ZNF385D.png', 'ZNF385D', this)">
+                    <div class="item-top-row">
+                        <span class="item-name">ZNF385D</span>
+                        <div>
+                            
+                            <a href="04_Boxplots/ZNF385D.png" target="_blank" class="new-tab-icon" title="Open in new tab" onclick="event.stopPropagation();">↗</a>
+                        </div>
+                    </div>
+                    <div class="item-comment"></div>
+                </li>
+                </ul>
+            </div>
+        </div>
+        </div>
+        <div class="viewer-column" id="viewerContainer">
+            <div id="viewerHeader" class="viewer-header" style="display:none">
+                <span id="viewerTitle"></span>
+                <a id="fullImageLink" href="#" target="_blank" class="open-full-btn">Open Full Image ↗</a>
+            </div>
+            <div class="viewer-body">
+                <p id="placeholder" class="placeholder-text">Select an item from the list to visualize</p>
+                <img id="mainViewerImg" src="" alt="Plot Viewer">
+            </div>
+        </div>
+    </div>
+</main>
+<script>
+    function openTab(evt, tabId) {
+        var contents = document.getElementsByClassName("tab-content");
+        for (var i = 0; i < contents.length; i++) contents[i].classList.remove("active");
+        var buttons = document.getElementsByClassName("tab-btn");
+        for (var i = 0; i < buttons.length; i++) buttons[i].classList.remove("active");
+        document.getElementById(tabId).classList.add("active");
+        evt.currentTarget.classList.add("active");
+    }
+    function filterList(input, listId) {
+        var filter = input.value.toUpperCase();
+        var rows = document.getElementById(listId).getElementsByClassName("item-row");
+        for (var i = 0; i < rows.length; i++) {
+            var name = rows[i].querySelector(".item-name").innerText;
+            var comment = rows[i].querySelector(".item-comment").innerText;
+            var combined = (name + " " + comment).toUpperCase();
+            rows[i].style.display = combined.indexOf(filter) > -1 ? "" : "none";
+        }
+    }
+    function viewImage(src, title, element) {
+        document.getElementById("placeholder").style.display = "none";
+        document.getElementById("viewerHeader").style.display = "flex";
+        document.getElementById("viewerTitle").innerText = title;
+        document.getElementById("fullImageLink").href = src;
+        
+        const img = document.getElementById("mainViewerImg");
+        img.src = src;
+        img.style.display = "inline-block";
+        
+        var rows = document.getElementsByClassName("item-row");
+        for (var i = 0; i < rows.length; i++) rows[i].classList.remove("selected");
+        if(element) element.classList.add("selected");
+    }
+</script>
+</body>
+</html>
