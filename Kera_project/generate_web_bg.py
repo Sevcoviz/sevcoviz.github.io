@@ -4,7 +4,7 @@ from pathlib import Path
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
-BASE_DIR = r"C:\Users\sevco\Documents\diplomka\Keratoacanthoma_spatial_transcriptomics\analysis\01_fibroblast_Lacina\skripts_report3\Keratoacanthoma_app"
+BASE_DIR = r"C:\Users\sevco\Documents\dokumenty\CV\sevcoviz.github.io\Kera_project"
 
 SECTIONS = {
     "01_PCA": "PCA Analysis",
