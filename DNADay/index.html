@@ -1,0 +1,1953 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PyMOL Workshop — Vizualizujte život na atomárnej úrovni</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050d14;
+    --surface: #0a1724;
+    --surface2: #0f2235;
+    --border: #1a3a55;
+    --cyan: #00e5ff;
+    --cyan-dim: #007a99;
+    --teal: #00b894;
+    --amber: #f9a825;
+    --coral: #ff6b6b;
+    --purple: #a78bfa;
+    --text: #c8e6f5;
+    --text-dim: #6a90ab;
+    --white: #e8f4ff;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --display: 'Bebas Neue', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ── CANVAS BACKGROUND ── */
+  #hero-canvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.18;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 3rem;
+    background: rgba(5,13,20,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--cyan);
+    letter-spacing: 0.1em;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--cyan); }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 8rem 2rem 4rem;
+  }
+
+  .hero-tag {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.25em;
+    color: var(--cyan);
+    text-transform: uppercase;
+    border: 1px solid var(--cyan-dim);
+    padding: 0.4rem 1.2rem;
+    border-radius: 2px;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .hero h1 {
+    font-family: var(--display);
+    font-size: clamp(4rem, 10vw, 9rem);
+    line-height: 0.9;
+    letter-spacing: 0.03em;
+    color: var(--white);
+    animation: fadeUp 0.7s 0.1s ease both;
+    margin-bottom: 1rem;
+  }
+
+  .hero h1 span { color: var(--cyan); }
+
+  .hero-sub {
+    font-size: 1.15rem;
+    color: var(--text-dim);
+    max-width: 560px;
+    animation: fadeUp 0.7s 0.2s ease both;
+    margin-bottom: 3rem;
+    font-weight: 300;
+  }
+
+  .hero-cta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: fadeUp 0.7s 0.3s ease both;
+  }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    padding: 0.8rem 2rem;
+    border-radius: 3px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: var(--cyan);
+    color: var(--bg);
+    border: none;
+    font-weight: 700;
+  }
+
+  .btn-primary:hover { background: #33eaff; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,229,255,0.3); }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--cyan);
+    border: 1px solid var(--cyan-dim);
+  }
+
+  .btn-outline:hover { border-color: var(--cyan); background: rgba(0,229,255,0.06); }
+
+  /* ── SCROLL INDICATOR ── */
+  .scroll-hint {
+    position: absolute;
+    bottom: 2.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    animation: fadeUp 1s 0.8s ease both;
+  }
+
+  .scroll-line {
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, var(--cyan), transparent);
+    animation: scrollPulse 2s infinite;
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    position: relative;
+    z-index: 1;
+    padding: 6rem 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: var(--cyan);
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+  }
+
+  h2 {
+    font-family: var(--display);
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    line-height: 1;
+    color: var(--white);
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.02em;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 0.8rem;
+  }
+
+  p { color: var(--text); margin-bottom: 1rem; font-size: 0.97rem; }
+
+  /* ── DIVIDER ── */
+  .divider {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+    margin: 0;
+  }
+
+  /* ── BASICS GRID ── */
+  .basics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+
+  .basics-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.8rem;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+
+  .basics-card:hover { border-color: var(--cyan-dim); transform: translateY(-3px); }
+
+  .card-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  /* ── CODE BLOCKS ── */
+  .code-block {
+    background: #020810;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--cyan);
+    border-radius: 6px;
+    padding: 1.2rem 1.5rem;
+    margin: 1rem 0;
+    overflow-x: auto;
+  }
+
+  .code-block code {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: #a8d8ea;
+    line-height: 1.9;
+    white-space: pre;
+    display: block;
+  }
+
+  .code-comment { color: #4a7a8a; }
+  .code-cmd { color: var(--cyan); }
+  .code-str { color: var(--teal); }
+  .code-num { color: var(--amber); }
+
+  /* ── COMMAND REFERENCE TABLE ── */
+  .cmd-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5rem;
+    font-size: 0.88rem;
+  }
+
+  .cmd-table th {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--cyan);
+    text-align: left;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .cmd-table td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid rgba(26,58,85,0.5);
+    vertical-align: top;
+  }
+
+  .cmd-table tr:hover td { background: rgba(0,229,255,0.03); }
+
+  .cmd-table code {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--teal);
+    background: rgba(0,184,148,0.1);
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+  }
+
+  /* ── TASK CARDS ── */
+  .task-section {
+    position: relative;
+    z-index: 1;
+    padding: 5rem 2rem;
+    width: 100%;
+  }
+
+  .task-wrapper {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .task-card {
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 4rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .task-card.visible { opacity: 1; transform: translateY(0); }
+
+  .task-header {
+    padding: 2.5rem 3rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .task-number {
+    font-family: var(--display);
+    font-size: 5rem;
+    line-height: 1;
+    opacity: 0.15;
+    color: var(--cyan);
+    flex-shrink: 0;
+    margin-top: -0.5rem;
+  }
+
+  .task-meta {}
+
+  .task-badge {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    padding: 0.3rem 0.8rem;
+    border-radius: 2px;
+    margin-bottom: 0.8rem;
+    display: inline-block;
+  }
+
+  .badge-dna { background: rgba(0,229,255,0.15); color: var(--cyan); border: 1px solid rgba(0,229,255,0.3); }
+  .badge-drug { background: rgba(247,167,38,0.15); color: var(--amber); border: 1px solid rgba(247,167,38,0.3); }
+  .badge-protein { background: rgba(167,139,250,0.15); color: var(--purple); border: 1px solid rgba(167,139,250,0.3); }
+  .badge-alpha { background: rgba(0,184,148,0.15); color: var(--teal); border: 1px solid rgba(0,184,148,0.3); }
+
+  .task-title {
+    font-family: var(--display);
+    font-size: 2.2rem;
+    color: var(--white);
+    letter-spacing: 0.03em;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+  }
+
+  .task-subtitle {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+  }
+
+  .task-body {
+    padding: 2.5rem 3rem;
+  }
+
+  .task-body .lead {
+    font-size: 1rem;
+    color: var(--text);
+    font-weight: 300;
+    border-left: 3px solid var(--border);
+    padding-left: 1.2rem;
+    margin-bottom: 2rem;
+    font-style: italic;
+  }
+
+  /* ── STEPS ── */
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .step {
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+
+  .step-num {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--bg);
+    background: var(--cyan);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-weight: 700;
+    margin-top: 2px;
+  }
+
+  .step-drug .step-num { background: var(--amber); color: var(--bg); }
+  .step-protein .step-num { background: var(--purple); color: var(--bg); }
+
+  .step-content h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 0.3rem;
+  }
+
+  .step-content p { margin-bottom: 0; font-size: 0.88rem; color: var(--text-dim); }
+
+  /* ── OBJECTIVES BOX ── */
+  .objectives-box {
+    background: rgba(0,229,255,0.04);
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    margin: 1.5rem 0;
+  }
+
+  .objectives-box.amber { background: rgba(249,168,37,0.04); border-color: rgba(249,168,37,0.2); }
+  .objectives-box.purple { background: rgba(167,139,250,0.04); border-color: rgba(167,139,250,0.2); }
+  .objectives-box.teal { background: rgba(0,184,148,0.04); border-color: rgba(0,184,148,0.2); }
+
+  .objectives-box h4 {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    margin-bottom: 1rem;
+    color: var(--cyan);
+  }
+
+  .objectives-box.amber h4 { color: var(--amber); }
+  .objectives-box.purple h4 { color: var(--purple); }
+  .objectives-box.teal h4 { color: var(--teal); }
+
+  .objectives-box ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .objectives-box li {
+    font-size: 0.88rem;
+    color: var(--text);
+    display: flex;
+    gap: 0.7rem;
+    align-items: flex-start;
+  }
+
+  .objectives-box li::before {
+    content: '→';
+    color: var(--cyan);
+    flex-shrink: 0;
+  }
+
+  .objectives-box.amber li::before { color: var(--amber); }
+  .objectives-box.purple li::before { color: var(--purple); }
+  .objectives-box.teal li::before { color: var(--teal); }
+
+  /* ── PDB ID PILL ── */
+  .pdb-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.4rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--teal);
+    margin: 0.3rem;
+  }
+
+  .pdb-pill span { color: var(--text-dim); font-size: 0.72rem; }
+
+  /* ── CHALLENGE BANNER ── */
+  .challenge-banner {
+    background: linear-gradient(135deg, rgba(0,229,255,0.08), rgba(0,184,148,0.08));
+    border: 1px solid rgba(0,229,255,0.25);
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    margin-top: 2rem;
+  }
+
+  .challenge-banner h4 {
+    color: var(--cyan);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    margin-bottom: 0.7rem;
+  }
+
+  .challenge-banner.amber { background: linear-gradient(135deg, rgba(249,168,37,0.08), rgba(255,107,107,0.06)); border-color: rgba(249,168,37,0.25); }
+  .challenge-banner.amber h4 { color: var(--amber); }
+
+  .challenge-banner.purple { background: linear-gradient(135deg, rgba(167,139,250,0.08), rgba(100,100,255,0.06)); border-color: rgba(167,139,250,0.25); }
+  .challenge-banner.purple h4 { color: var(--purple); }
+
+  /* ── BONUS SECTION ── */
+  .bonus-section {
+    position: relative;
+    z-index: 1;
+    padding: 5rem 2rem;
+    background: linear-gradient(180deg, transparent, rgba(0,184,148,0.04), transparent);
+  }
+
+  .bonus-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .bonus-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .bonus-star {
+    font-size: 3rem;
+    animation: spin 8s linear infinite;
+  }
+
+  /* ── ALPHAFOLD STEPS ── */
+  .af-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.2rem;
+    margin-top: 2rem;
+  }
+
+  .af-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    border-top: 3px solid var(--teal);
+    transition: transform 0.2s;
+  }
+
+  .af-card:hover { transform: translateY(-3px); }
+
+  .af-card-num {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--teal);
+    letter-spacing: 0.15em;
+    margin-bottom: 0.8rem;
+  }
+
+  /* ── TIPS BOX ── */
+  .tips-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    margin-top: 3rem;
+  }
+
+  .tips-box h3 {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    color: var(--amber);
+    margin-bottom: 1.5rem;
+  }
+
+  .tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .tip {
+    display: flex;
+    gap: 0.8rem;
+    align-items: flex-start;
+  }
+
+  .tip-icon { flex-shrink: 0; font-size: 1.1rem; }
+  .tip p { font-size: 0.83rem; color: var(--text-dim); margin: 0; }
+
+  /* ── SOLUTION TOGGLE ── */
+  .solution-wrapper {
+    margin-top: 1.5rem;
+  }
+
+  .solution-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    padding: 0.75rem 1.6rem;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid var(--cyan-dim);
+    background: transparent;
+    color: var(--cyan);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .solution-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0,229,255,0.07);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .solution-btn:hover::before { opacity: 1; }
+  .solution-btn:hover { border-color: var(--cyan); box-shadow: 0 0 18px rgba(0,229,255,0.18); }
+
+  .solution-btn.amber { color: var(--amber); border-color: rgba(249,168,37,0.5); }
+  .solution-btn.amber::before { background: rgba(249,168,37,0.07); }
+  .solution-btn.amber:hover { border-color: var(--amber); box-shadow: 0 0 18px rgba(249,168,37,0.18); }
+
+  .solution-btn.purple { color: var(--purple); border-color: rgba(167,139,250,0.5); }
+  .solution-btn.purple::before { background: rgba(167,139,250,0.07); }
+  .solution-btn.purple:hover { border-color: var(--purple); box-shadow: 0 0 18px rgba(167,139,250,0.18); }
+
+  .solution-btn.teal { color: var(--teal); border-color: rgba(0,184,148,0.5); }
+  .solution-btn.teal::before { background: rgba(0,184,148,0.07); }
+  .solution-btn.teal:hover { border-color: var(--teal); box-shadow: 0 0 18px rgba(0,184,148,0.18); }
+
+  .solution-btn .btn-arrow {
+    display: inline-block;
+    transition: transform 0.3s ease;
+    font-style: normal;
+  }
+
+  .solution-btn.open .btn-arrow { transform: rotate(90deg); }
+
+  .solution-panel {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.55s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+    opacity: 0;
+  }
+
+  .solution-panel.open {
+    max-height: 3000px;
+    opacity: 1;
+  }
+
+  .solution-inner {
+    margin-top: 1.2rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: rgba(2,8,16,0.7);
+    overflow: hidden;
+  }
+
+  .solution-header {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 1rem 1.5rem;
+    background: rgba(0,229,255,0.05);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    color: var(--cyan);
+  }
+
+  .solution-header.amber { background: rgba(249,168,37,0.05); color: var(--amber); }
+  .solution-header.purple { background: rgba(167,139,250,0.05); color: var(--purple); }
+  .solution-header.teal { background: rgba(0,184,148,0.05); color: var(--teal); }
+
+  .solution-body {
+    padding: 1.5rem 2rem 2rem;
+  }
+
+  .solution-body h4 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--white);
+    margin: 1.2rem 0 0.4rem;
+  }
+
+  .solution-body h4:first-child { margin-top: 0; }
+
+  .solution-body p {
+    font-size: 0.87rem;
+    color: var(--text-dim);
+    margin-bottom: 0.3rem;
+  }
+
+  .solution-body ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .solution-body li {
+    font-size: 0.87rem;
+    color: var(--text);
+    display: flex;
+    gap: 0.7rem;
+  }
+
+  .solution-body li::before {
+    content: '✓';
+    color: var(--teal);
+    flex-shrink: 0;
+    font-weight: 700;
+  }
+
+  .solution-note {
+    background: rgba(0,184,148,0.07);
+    border: 1px solid rgba(0,184,148,0.2);
+    border-radius: 6px;
+    padding: 0.9rem 1.2rem;
+    margin-top: 1rem;
+    font-size: 0.83rem;
+    color: var(--text-dim);
+  }
+
+  .solution-note strong { color: var(--teal); }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 3rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: gap;
+    gap: 1rem;
+  }
+
+  footer p {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin: 0;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .footer-links a {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover { color: var(--cyan); }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px;
+    background: var(--cyan);
+    z-index: 200;
+    transition: width 0.1s;
+    box-shadow: 0 0 10px var(--cyan);
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.4; transform: scaleY(1); }
+    50% { opacity: 1; transform: scaleY(1.1); }
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 700px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .task-header { flex-direction: column; gap: 1rem; padding: 1.5rem; }
+    .task-body { padding: 1.5rem; }
+    .task-number { font-size: 3rem; }
+  }
+
+  /* ── INLINE ACCENT ELEMENTS ── */
+  .accent { color: var(--cyan); }
+  .accent-amber { color: var(--amber); }
+  .accent-purple { color: var(--purple); }
+  .accent-teal { color: var(--teal); }
+
+  strong { color: var(--white); font-weight: 600; }
+
+  /* two-col layout inside task body */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 1.5rem;
+  }
+  @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* separator in task */
+  .task-sep {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2rem 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- Progress Bar -->
+<div class="progress-bar" id="progress"></div>
+
+<!-- Animated Background Canvas -->
+<canvas id="hero-canvas"></canvas>
+
+<!-- Navigation -->
+<nav>
+  <div class="nav-logo">⬡ PyMOL Workshop</div>
+  <ul class="nav-links">
+    <li><a href="#basics">Základy</a></li>
+    <li><a href="#task1">DNA</a></li>
+    <li><a href="#task2">Návrh liečív</a></li>
+    <li><a href="#task3">Proteín</a></li>
+    <li><a href="#bonus">AlphaFold</a></li>
+  </ul>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-tag">Štrukturálna biológia</div>
+  <h1>VIZUALIZÁCIA<br><span>PROTEÍNOV</span><br>NA ATOMICKEJ ÚROVNI</h1>
+  <p class="hero-sub">Objavte reálnu štruktúru molekúl života na Zemi.</p>
+  <div class="hero-cta">
+    <a href="#basics" class="btn btn-primary">OTVOR SVOJ VIRTUÁLNY LAB →</a>
+    <a href="https://pymol.org" target="_blank" class="btn btn-outline">AKO STIAHNUŤ PyMOL</a>
+  </div>
+  <div class="scroll-hint">
+    <div class="scroll-line"></div>
+    SCROLL
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ════════════════════════════════════════
+     BASICS SECTION
+════════════════════════════════════════ -->
+<section id="basics">
+  <div class="section-label">// 00 — Úvod</div>
+  <h2>ZÁKLADY PyMOLu</h2>
+  <p><strong>PyMOL je nástroj na vizualizáciu molekúl</strong>, ktorý používajú vedci po celom svete. 
+    Skôr než sa pustíme do úloh, naučíme sa s ním pracovať. 
+    Nebojte sa — za pár minút z vás budú profíci.</p>
+
+  <!-- What is PyMOL -->
+  <div class="basics-grid">
+    <div class="basics-card">
+      <div class="card-icon">🖥️</div>
+      <h3>Čo je to PyMOL?</h3>
+      <p>PyMOL je bezplatný open-source program, ktorý umožňuje načítavať, zobrazovať 
+        a analyzovať 3D štruktúry biologických molekúl – proteínov, DNA a liečiv
+        – v atómovom rozlíšení.</p>
+      <p>Je to zlatý štandard vizualizácie používanej v štrukturálnej biológii a farmakológii.</p>
+    </div>
+    <div class="basics-card">
+      <div class="card-icon">🗄️</div>
+      <h3>Čo je to PDB?</h3>
+      <p><strong>Protein Data Bank (PDB)</strong> je celosvetový archív 3D molekulárnych štruktúr. 
+        Každá štruktúra má jedinečný 4-miestny identifikačný kód, napríklad <code style="font-family:var(--mono);color:var(--teal)">1BNA</code>.</p>
+      <p>Môžete si ich prezerať na <strong>rcsb.org</strong> a načítať akúkoľvek štruktúru priamo do PyMOLu.</p>
+    </div>
+    <!-- <div class="basics-card">
+      <div class="card-icon"></div>
+      <h3>Ovládanie myšou</h3>
+      <p><strong>Ľavé tlačidlo + ťah</strong> — Rotácia molekuly<br>
+      <strong>Pravé tlačidlo + ťah</strong> — Zoom (priblíženie/vzdialenie)<br>
+      <strong>Stredné tlačidlo + ťah</strong> — Posun pohľadu (Pan)<br>
+      <strong>Koliesko</strong> — Zoom<br>
+      <strong>Dvojklik na atóm</strong> — Vycentrovať na atóm</p>
+    </div> -->
+  </div>
+
+  <!-- Interface Tour -->
+  <h3 style="margin-top:3rem; margin-bottom:1rem;">Rozhranie PyMOLu</h3>
+  <div class="basics-grid">
+    <!-- <div class="basics-card">
+      <div class="card-icon">⬛</div>
+      <h3>Viewer Window (Okno prehliadača)</h3>
+      <p>Hlavné čierne okno, kde sa zobrazuje vaša 3D molekula. Tu môžete rotovať, približovať a skúmať štruktúry.</p>
+    </div> -->
+    <div class="basics-card">
+      <div class="card-icon">⌨️</div>
+      <h3>Command Line (Príkazový riadok)</h3>
+      <p>Tu píšete príkazy na ovládanie PyMOLu. Nachádza sa v spodnej časti obrazovky. Tu sa deje kúzlo — všetky príkazy v tomto workshope patria sem.</p>
+    </div>
+    <div class="basics-card">
+      <div class="card-icon">📋</div>
+      <h3>Object Panel (Panel objektov)</h3>
+      <p>Na pravej strane. Zobrazuje všetky načítané molekuly. Každý objekt má tlačidlá: <strong>A</strong> (Akcia), <strong>S</strong> (Show - ukázať), <strong>H</strong> (Hide - skryť), <strong>L</strong> (Label - popisok), <strong>C</strong> (Color - farba).</p>
+    </div>
+  </div>
+
+  <!-- Essential Commands -->
+  <h3 style="margin-top:3rem; margin-bottom:0.5rem;">Ťahák základných príkazov</h3>
+  <p style="margin-bottom:0">Tieto príkazy píšte do príkazového riadku. Príkazy nerozlišujú veľké a malé písmená.</p>
+
+  <table class="cmd-table">
+    <thead>
+      <tr>
+        <th>PRÍKAZ</th>
+        <th>ČO ROBÍ</th>
+        <th>PRÍKLAD</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>fetch</code></td>
+        <td>Stiahne štruktúru z PDB priamo do PyMOLu</td>
+        <td><code>fetch 1BNA</code></td>
+      </tr>
+      <tr>
+        <td><code>show</code></td>
+        <td>Zobrazí reprezentáciu (cartoon, sticks, surface, spheres)</td>
+        <td><code>show cartoon</code></td>
+      </tr>
+      <tr>
+        <td><code>hide</code></td>
+        <td>Skryje reprezentáciu</td>
+        <td><code>hide lines</code></td>
+      </tr>
+      <tr>
+        <td><code>color</code></td>
+        <td>Zmení farbu vybraných atómov</td>
+        <td><code>color cyan, chain A</code></td>
+      </tr>
+      <tr>
+        <td><code>select</code></td>
+        <td>Vytvorí výber špecifických atómov</td>
+        <td><code>select mysel, resn ATP</code></td>
+      </tr>
+      <tr>
+        <td><code>zoom</code></td>
+        <td>Priblíži na výber alebo celú molekulu</td>
+        <td><code>zoom all</code></td>
+      </tr>
+      <tr>
+        <td><code>bg_color</code></td>
+        <td>Zmení farbu pozadia</td>
+        <td><code>bg_color white</code></td>
+      </tr>
+      <tr>
+        <td><code>ray</code></td>
+        <td>Vyrenderuje obrázok vo vysokej kvalite</td>
+        <td><code>ray 1920, 1080</code></td>
+      </tr>
+      <tr>
+        <td><code>png</code></td>
+        <td>Uloží snímku obrazovky do súboru</td>
+        <td><code>png moj_obrazok.png</code></td>
+      </tr>
+      <tr>
+        <td><code>set_name</code></td>
+        <td>Premenuje objekt</td>
+        <td><code>set_name 1BNA, dna</code></td>
+      </tr>
+      <tr>
+        <td><code>remove</code></td>
+        <td>Vymaže atómy (napr. vodu)</td>
+        <td><code>remove solvent</code></td>
+      </tr>
+      <tr>
+        <td><code>distance</code></td>
+        <td>Odmeria vzdialenosť medzi dvoma atómami</td>
+        <td><code>distance d1, atom1, atom2</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Representations -->
+  <h3 style="margin-top:3rem; margin-bottom:1rem;">Štýly reprezentácie</h3>
+  <div class="basics-grid">
+    <div class="basics-card">
+      <div class="card-icon">🎨</div>
+      <h3>Cartoon</h3>
+      <p>Zobrazuje kostru proteínu ako stuhy a helixy. Najlepšie na pochopenie celkového 3D tvaru a sekundárnej štruktúry.</p>
+      <div class="code-block"><code><span class="code-cmd">show</span> cartoon</code></div>
+    </div>
+    <div class="basics-card">
+      <div class="card-icon">🔵</div>
+      <h3>Sticks / Lines</h3>
+      <p>Zobrazuje všetky väzby medzi atómami. Skvelé na sledovanie individuálnych chemických väzieb a interakcií medzi molekulami.</p>
+      <div class="code-block"><code><span class="code-cmd">show</span> sticks</code></div>
+    </div>
+    <div class="basics-card">
+      <div class="card-icon">🌊</div>
+      <h3>Surface</h3>
+      <p>Zobrazuje vonkajší povrch molekuly. Ideálne na zobrazenie tvaru väzbových vreciek, kam sa pripájajú liečivá.</p>
+      <div class="code-block"><code><span class="code-cmd">show</span> surface</code></div>
+    </div>
+    <div class="basics-card">
+      <div class="card-icon">⚽</div>
+      <h3>Spheres</h3>
+      <p>Zobrazuje každý atóm ako guľu (van der Waals). Ukazuje skutočnú fyzickú veľkosť atómov a ich usporiadanie.</p>
+      <div class="code-block"><code><span class="code-cmd">show</span> spheres</code></div>
+    </div>
+  </div>
+
+  <!-- Quick Start -->
+  <h3 style="margin-top:3rem; margin-bottom:1rem;">Vašich prvých 5 minút v PyMOLi</h3>
+  <p>Vložte tieto príkazy jeden po druhom do príkazového riadku, aby ste načítali a preskúmali svoju prvú molekulu:</p>
+  <div class="code-block"><code><span class="code-comment"># 1. Načítaj štruktúru proteínu z PDB (Hemoglobín — proteín vo vašej krvi)</span>
+<span class="code-cmd">fetch</span> <span class="code-str">2HHB</span>
+
+<span class="code-comment"># 2. Zobraz ho ako "cartoon" (stuhový model)</span>
+<span class="code-cmd">show</span> cartoon
+
+<span class="code-comment"># 3. Ofarbi každý reťazec inou farbou</span>
+<span class="code-cmd">util.cbc</span>
+
+<span class="code-comment"># 4. Skry molekuly vody pre čistejší pohľad</span>
+<span class="code-cmd">hide</span> everything, solvent
+
+<span class="code-comment"># 5. Priblíž tak, aby bola celá molekula na obrazovke</span>
+<span class="code-cmd">zoom</span> all
+
+<span class="code-comment"># 6. Zobraz povrch, aby si videl 3D tvar</span>
+<span class="code-cmd">show</span> surface
+<span class="code-cmd">set</span> transparency, <span class="code-num">0.5</span></code></div>
+
+  <div class="tips-box">
+    <h3>⚡ PRO TIPY PRED ZAČIATKOM</h3>
+    <div class="tips-grid">
+      <div class="tip">
+        <div class="tip-icon">💡</div>
+        <p>Používajte <strong>Tab</strong> na automatické dopĺňanie príkazov.</p>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">↑</div>
+        <p>Stlačením <strong>šípky hore</strong> vyvoláte predchádzajúce príkazy.</p>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">🎯</div>
+        <p>Kliknutím na akýkoľvek atóm uvidíte jeho názov v príkazovom riadku.</p>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">🔄</div>
+        <p>Napíšte <strong>reinitialize</strong>, ak chcete všetko vymazať a začať odznova.</p>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">🖼️</div>
+        <p>Stlačte <strong>Ctrl+P</strong> pre uloženie PNG obrázka aktuálneho pohľadu.</p>
+      </div>
+      <div class="tip">
+        <div class="tip-icon">🌑</div>
+        <p>Zmena pozadia: <code style="font-family:var(--mono);color:var(--teal);font-size:0.8rem">bg_color black</code> alebo <code style="font-family:var(--mono);color:var(--teal);font-size:0.8rem">bg_color white</code></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ════════════════════════════════════════
+     TASKS
+════════════════════════════════════════ -->
+<div class="task-section" id="tasks">
+  <div class="task-wrapper">
+
+    <div class="section-label" style="margin-bottom:0.8rem">// 01–03 — Úlohy</div>
+    <h2 style="margin-bottom:0.3rem">VAŠE MISIE</h2>
+    <p style="color:var(--text-dim); margin-bottom:3rem">Tri reálne výzvy z molekulárnej biológie. Vyriešte ich ako vedci.</p>
+
+    <!-- ═══ TASK 1 — DNA ═══ -->
+    <div class="task-card" id="task1">
+      <div class="task-header">
+        <div class="task-number">01</div>
+        <div class="task-meta">
+          <div class="task-badge badge-dna">🧬 Štruktúra DNA</div>
+          <div class="task-title">TAJOMSTVO<br>DVOJZÁVITNICE</div>
+          <div class="task-subtitle">Odhadovaný čas: 15 minút &nbsp;·&nbsp; Náročnosť: 1/5</div>
+        </div>
+      </div>
+      <div class="task-body">
+        <p class="lead">V roku 1953 Watson a Crick opísali štruktúru DNA. Dnes ju uvidíme tak ako existuje v živej bunke.</p>
+
+        <div class="objectives-box">
+          <h4>🎯 CIELE ÚLOHY</h4>
+          <ul>
+            <li>Vizualizovať 3D štruktúru dvojzvitnice DNA</li>
+            <li>Identifikovať štyri bázy DNA: Adenín, Tyamín, Guanín, Cytozín</li>
+            <li>Vizualizovať vodíkové väzby medzi komplementárnymi pármi báz</li>
+            <li>Odmerať šírku a stúpanie zvitnice</li>
+            <li>Vidieť, ako sú nukleotidy naskladané na sebe</li>
+          </ul>
+        </div>
+
+        <div class="two-col">
+          <div>
+            <h3>Štruktúry na použitie</h3>
+            <div class="pdb-pill">1BNA <span>B-DNA dodekamér · Klasika</span></div>
+            <div class="pdb-pill">1ZF7 <span>A-DNA forma</span></div>
+            <div class="pdb-pill">4OCB <span>Z-DNA (ľavotočivá!)</span></div>
+            <!-- <p style="margin-top:1rem; font-size:0.85rem; color:var(--text-dim)">Začnite s <strong class="accent">1BNA</strong> — je to najštudovanejšia kryštálová štruktúra DNA na svete.</p> -->
+          </div>
+          <div>
+            <h3>Pozadie</h3>
+            <p style="font-size:0.88rem">DNA nesie všetky inštrukcie na stavbu každého živého organizmu. 
+              Jej dvojzvitnica uchováva informácie prostredníctvom párovania báz: <strong class="accent">A sa páruje s T</strong> a <strong class="accent-teal">G sa páruje s C</strong>. Tieto páry držia pohromade vodíkové väzby.</p>
+          </div>
+        </div>
+
+        <hr class="task-sep">
+        <h3>Inštrukcie krok za krokom</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+              <h4>Načítajte štruktúru DNA</h4>
+              <p>Stiahnite klasický B-DNA dodekamér z databázy PDB.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+              <h4>Vyčistite pohľad</h4>
+              <p>Odstráňte molekuly vody.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+              <h4>Zvoľte si farby molekuly</h4>
+              <p>Ofarbite reťazec A azúrovou a reťazec B magentovou, aby ste videli dve vlákna zvitnice.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+              <h4>Nájdite a zobrazte páry báz</h4>
+              <p>Vyberte a zvýraznite dve nukleotidové bázy a odmerajte vodíkové väzby medzi nimi.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">5</div>
+            <div class="step-content">
+              <h4>Odmerajte zvitnicu</h4>
+              <p>Použite nástroje na meranie a odmerajte priemer a vzdialenosť medzi pármi báz.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-block">
+<code><span class="code-comment">## ÚLOHA 1 — Prieskumník štruktúry DNA ##</span>
+
+<span class="code-comment"># Krok 1: Načítaj B-DNA</span>
+<span class="code-cmd">fetch</span> <span class="code-str">1BNA</span>
+
+<span class="code-comment"># Otvor si sekvenciu báz</span>
+<span class="code-cmd">Menu:</span> Display -> Sequence
+
+<span class="code-comment"># Krok 2: Vyčisti — odstráň molekuly vody</span>
+<span class="code-cmd">remove</span> solvent
+<span class="code-cmd">hide</span> everything
+<span class="code-cmd">show</span> sticks
+<span class="code-cmd">bg_color</span> black
+
+<span class="code-comment"># Krok 3: Nastav zobrazenie cartoon</span>
+<span class="code-cmd">show</span> cartoon, 1BNA
+<span class="code-cmd">set</span> cartoon_ring_mode, 3
+<span class="code-cmd">set</span> cartoon_ring_finder, 1
+<span class="code-cmd">set</span> cartoon_nucleic_acid_mode, 4
+
+<span class="code-comment"># Krok 4: Ofarbi dve vlákna DNA odlišne</span>
+<span class="code-cmd">color</span> slate, chain A
+<span class="code-cmd">color</span> ruby, chain B
+
+<span class="code-comment"># Krok 5: Vyber a ofarbi dva bázové páry - GC a AT</span>
+<span class="code-comment">Buď v sekvencii alebo v štruktúre vyber bázový pár - vytvor selekciu (sele)</span>
+<span class="code-cmd">set_name</span> sele, {nazov}
+
+<span class="code-comment">Zafarby výber podľa atómov</span>
+<span class="code-cmd">Object Panel:</span> C -> by element
+
+<span class="code-comment">Nájdi hydrofóbne väzby medzi bázami</span>
+<span class="code-cmd">Object Panel:</span> A -> find -> any contacts -> between chains within 3.5 A
+
+<span class="code-comment"># Krok 6: Odmeraj priemer zvitnice (najprv klikni na dva atómy fosforu na opačných vláknach)</span>
+<span class="code-cmd">Menu:</span> Wizard -> Measurement -> Atom1 + Atom 2 -> Done
+
+<span class="code-comment"># Bonus: Zobraz povrch DNA</span>
+<span class="code-cmd">Object Panel:</span> S -> Surface
+        </div>
+
+        <div class="challenge-banner">
+          <h4>🔬 Otázky</h4>
+          <!-- <p style="font-size:0.88rem; color:var(--text)">Po preskúmaní štruktúry skúste odpovedať na tieto otázky:</p> -->
+          <ul style="list-style:none; margin-top:0.8rem; display:flex; flex-direction:column; gap:0.5rem;">
+            <li style="font-size:0.87rem; color:var(--text-dim)">❓<strong>1.1</strong> &nbsp;Koľko bázových párov má štruktúra 1BNA?</li>
+            <li style="font-size:0.87rem; color:var(--text-dim)">❓<strong>1.2</strong> &nbsp;Aký je približný priemer B-DNA v Ångströmoch (Å)? (1 Å = 0,1 nm)</li>
+            <li style="font-size:0.87rem; color:var(--text-dim)">⭐ <strong>Bonus:</strong> &nbsp;Nájdite oblasť, kde je viditeľný "major groove" (veľký žliabok). Vedeli by ste si tipnúť prečo je dôležitý?</li>
+          </ul>
+        </div>
+
+        <div class="solution-wrapper">
+          <button class="solution-btn" onclick="toggleSolution('sol1', this)">
+            <i class="btn-arrow">▶</i> REVEAL SOLUTION
+          </button>
+          <div class="solution-panel" id="sol1">
+            <div class="solution-inner">
+              <div class="solution-header">🔬 TASK 1 — SOLUTION &amp; EXPECTED ANSWERS</div>
+              <div class="solution-body">
+                <h4>Q: How many base pairs are in 1BNA?</h4>
+                <p>1BNA is a <strong style="color:var(--white)">12-base-pair</strong> DNA dodecamer (sequence: CGCGAATTCGCG). You can count 12 rungs on the double helix ladder.</p>
+
+                <h4>Q: Which strand is which?</h4>
+                <p>After coloring Chain A = cyan and Chain B = magenta, you'll see two intertwined strands running in <strong style="color:var(--white)">antiparallel directions</strong> (5'→3' on one strand, 3'→5' on the other). The phosphate backbone zig-zags on the outside.</p>
+
+                <h4>Q: What is the diameter of B-DNA?</h4>
+                <p>B-DNA has a diameter of approximately <strong style="color:var(--white)">20 Å (2.0 nm)</strong>. Measure between two phosphorus atoms on opposite strands using the distance wizard. The expected value is ~18–22 Å.</p>
+
+                <h4>Q: Z-DNA (4OCB) vs. B-DNA (1BNA) differences</h4>
+                <ul>
+                  <li>Z-DNA is <strong>left-handed</strong> — the helix winds counter-clockwise when viewed from above</li>
+                  <li>Z-DNA has a more <strong>narrow, elongated</strong> shape compared to B-DNA's wide helix</li>
+                  <li>The sugar-phosphate backbone makes a <strong>zig-zag pattern</strong> (hence "Z")</li>
+                  <li>Z-DNA tends to form in GC-rich sequences under torsional stress</li>
+                </ul>
+
+                <h4>Extra: The major groove</h4>
+                <ul>
+                  <li>The major groove is the wider of the two grooves between the DNA strands</li>
+                  <li>It exposes the edges of base pairs, allowing proteins to <strong>read the DNA sequence</strong> without opening the helix</li>
+                  <li>Transcription factors and restriction enzymes use the major groove for sequence-specific recognition</li>
+                </ul>
+
+                <div class="solution-note">
+                  <strong>PyMOL tip:</strong> After measuring with <code style="font-family:var(--mono);font-size:0.8rem">distance</code>, the measurement object appears in the viewer. You can hide it with <code style="font-family:var(--mono);font-size:0.8rem">hide labels</code> or delete it with <code style="font-family:var(--mono);font-size:0.8rem">delete dist01</code>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+
+      </div>
+    </div>
+
+    <!-- ═══ TASK 2 — DRUG DESIGN ═══ -->
+    <div class="task-card" id="task2">
+      <div class="task-header">
+        <div class="task-number">02</div>
+        <div class="task-meta">
+          <div class="task-badge badge-drug">💊 Drogový dizajn</div>
+          <div class="task-title">MOLEKULA<br>VS VÍRUS</div>
+          <div class="task-subtitle">Odhadovaný čas: 30–40 minút &nbsp;·&nbsp; Náročnosť: ⭐⭐⭐</div>
+        </div>
+      </div>
+      <div class="task-body">
+        <p class="lead">Každý liek, ktorý ste kedy užili, bol navrhnutý tak, aby zapadol do proteínu ako kľúč do zámky. V tejto úlohe preskúmate, ako sa antivirotikum <strong style="color:var(--amber)">Oseltamivir (Tamiflu)</strong> viaže na vírus chrípky — a prečo je jeho tvar taký účinný pri zastavovaní ochorenia.</p>
+
+        <div class="objectives-box amber">
+          <h4>🎯 CIELE ÚLOHY</h4>
+          <ul>
+            <li>Pochopiť koncept aktívneho miesta enzýmu a väzbového vrecka</li>
+            <li>Preskúmať model "kľúča a zámky" pri interakcii lieku s proteínom</li>
+            <li>Identifikovať konkrétne aminokyseliny, ktoré interagujú s molekulou liečiva</li>
+            <li>Vizualizovať hydrofóbne, elektrostatické a vodíkové interakcie</li>
+            <li>Pochopiť, prečo tvar molekuly lieku určuje jeho účinnosť</li>
+          </ul>
+        </div>
+
+        <div class="two-col">
+          <div>
+            <h3>Štruktúry na použitie</h3>
+            <div class="pdb-pill">2QWK <span>Neuraminidáza + Oseltamivir</span></div>
+            <div class="pdb-pill">3CL2 <span>SARS-CoV-2 proteáza + liečivo</span></div>
+            <div class="pdb-pill">1HSG <span>HIV proteáza + indinavir</span></div>
+            <p style="margin-top:1rem; font-size:0.85rem; color:var(--text-dim)">Začnite s <strong class="accent-amber">2QWK</strong> — chrípková neuraminidáza s Tamiflu (oseltamivir karboxylát = ligand OSE).</p>
+          </div>
+          <div>
+            <h3>Veda v pozadí</h3>
+            <p style="font-size:0.88rem">Neuraminidáza chrípky je enzým, ktorý vírus používa na uvoľnenie nových vírusových častíc z infikovaných buniek. <strong>Tamiflu blokuje tento enzým</strong> tým, že presne zapadne do jeho aktívneho miesta. Žiadna aktivita enzýmu = vírus sa nemôže šíriť.</p>
+          </div>
+        </div>
+
+        <hr class="task-sep">
+        <h3>Inštrukcie krok za krokom</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-drug step-num">1</div>
+            <div class="step-content">
+              <h4>Načítajte komplex proteínu a liečiva</h4>
+              <p>Stiahnite štruktúru neuraminidázy s Tamiflu, ktoré je v nej už naviazané.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-drug step-num">2</div>
+            <div class="step-content">
+              <h4>Izolujte molekulu lieku</h4>
+              <p>Vyberte ligand lieku (OSE) a zobrazte ho pomocou "sticks". Ofarbite ho na žlto, aby vynikol.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-drug step-num">3</div>
+            <div class="step-content">
+              <h4>Zobrazte väzbové vrecko</h4>
+              <p>Zobrazte povrch proteínu okolo lieku. Uvidíte "vrecko", do ktorého liek dokonale zapadá.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-drug step-num">4</div>
+            <div class="step-content">
+              <h4>Nájdite interagujúce aminokyseliny</h4>
+              <p>Vyberte všetky zvyšky proteínu vo vzdialenosti 4 Å od lieku. To sú aminokyseliny, ktoré liek "držia".</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-drug step-num">5</div>
+            <div class="step-content">
+              <h4>Vizualizujte konkrétne interakcie</h4>
+              <p>Nájdite vodíkové väzby a ďalšie kontakty medzi liekom a proteínom.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-drug step-num">6</div>
+            <div class="step-content">
+              <h4>Vytvorte obrázok vedeckej kvality</h4>
+              <p>Vytvorte krásny vedecký obrázok lieku viazaného v jeho vrecku.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-block">
+<code><span class="code-comment">## ÚLOHA 2 — Prieskum väzby liečiva ##</span>
+
+<span class="code-comment"># Krok 1: Načítaj komplex neuraminidázy chrípky + Tamiflu</span>
+<span class="code-cmd">fetch</span> <span class="code-str">2QWK</span>
+<span class="code-cmd">remove</span> solvent
+<span class="code-cmd">bg_color</span> black
+<span class="code-cmd">hide</span> everything
+
+<span class="code-comment"># Zobraz proteín ako cartoon, ofarbený podľa sekundárnej štruktúry</span>
+<span class="code-cmd">show</span> cartoon, <span class="code-str">2QWK</span>
+<span class="code-cmd">util.cbc</span>
+
+<span class="code-comment"># Krok 2: Nájdi a zvýrazni molekulu lieku (názov ligandu: OSE)</span>
+<span class="code-cmd">select</span> tamiflu, resn OSE
+<span class="code-cmd">show</span> sticks, tamiflu
+<span class="code-cmd">color</span> yellow, tamiflu
+<span class="code-cmd">zoom</span> tamiflu
+
+<span class="code-comment"># Krok 3: Zobraz povrch proteínu — ofarbený podľa náboja</span>
+<span class="code-cmd">show</span> surface, <span class="code-str">2QWK</span>
+<span class="code-cmd">set</span> transparency, <span class="code-num">0.4</span>
+
+<span class="code-comment"># Ofarbi povrch podľa hydrofobicity (červená=hydrofóbny, modrá=hydrofilný)</span>
+<span class="code-cmd">spectrum</span> b, blue_white_red, <span class="code-str">2QWK</span>
+
+<span class="code-comment"># Krok 4: Vyber všetky aminokyseliny v okruhu 4Å od lieku (väzbové vrecko)</span>
+<span class="code-cmd">select</span> binding_pocket, byres (<span class="code-str">2QWK</span> within <span class="code-num">4.0</span> of tamiflu)
+<span class="code-cmd">show</span> sticks, binding_pocket
+<span class="code-cmd">color</span> cyan, binding_pocket
+<span class="code-cmd">label</span> binding_pocket and name CA, "%s %s" % (resn, resi)
+
+<span class="code-comment"># Krok 5: Nájdi vodíkové väzby medzi liekom a proteínom</span>
+<span class="code-cmd">distance</span> hbonds, tamiflu, binding_pocket, mode=<span class="code-num">2</span>
+<span class="code-cmd">color</span> green, hbonds
+
+<span class="code-comment"># Krok 6: Renderuj obrázok pre publikáciu</span>
+<span class="code-cmd">bg_color</span> white
+<span class="code-cmd">set</span> ray_shadows, <span class="code-num">1</span>
+<span class="code-cmd">set</span> ray_trace_mode, <span class="code-num">1</span>
+<span class="code-cmd">ray</span> <span class="code-num">1920</span>, <span class="code-num">1080</span>
+<span class="code-cmd">png</span> tamiflu_vazba.png</code>
+        </div>
+
+        <div class="challenge-banner amber">
+          <h4>💊 MYSLI AKO DIZAJNÉR LIEKOV — OTÁZKY NA ANALÝZU</h4>
+          <p style="font-size:0.88rem; color:var(--text)">Po preskúmaní interakcie lieku s proteínom:</p>
+          <ul style="list-style:none; margin-top:0.8rem; display:flex; flex-direction:column; gap:0.5rem;">
+            <li style="font-size:0.87rem; color:var(--text-dim)">❓ &nbsp;Koľko aminokyselín tvorí väzbové vrecko? Uveďte ich názvy a čísla.</li>
+            <li style="font-size:0.87rem; color:var(--text-dim)">❓ &nbsp;Koľko vodíkových väzieb tvorí Tamiflu s proteínom? Stačia na pevné udržanie lieku?</li>
+            <li style="font-size:0.87rem; color:var(--text-dim)">❓ &nbsp;Načítajte štruktúru <strong>1HSG</strong> (HIV proteáza). Ako sa líši toto väzbové vrecko od toho chrípkového?</li>
+            <li style="font-size:0.87rem; color:var(--text-dim)">❓ &nbsp;Ak vírus chrípky zmutuje aminokyselinu R292 — čo sa podľa vás stane s väzbou lieku?</li>
+            <li style="font-size:0.87rem; color:var(--text-dim)">⭐ &nbsp;<strong>Extra:</strong> Vyhľadajte Zanamivir (Relenza) — liek, ktorý mal byť nahradený Tamiflu. Nájdete jeho PDB štruktúru?</li>
+          </ul>
+        </div>
+        <!-- SOLUTION TOGGLE — TASK 2 -->
+        <div class="solution-wrapper">
+          <button class="solution-btn amber" onclick="toggleSolution('sol2', this)">
+            <i class="btn-arrow">▶</i> REVEAL SOLUTION
+          </button>
+          <div class="solution-panel" id="sol2">
+            <div class="solution-inner">
+              <div class="solution-header amber">💊 TASK 2 — SOLUTION &amp; EXPECTED ANSWERS</div>
+              <div class="solution-body">
+                <h4>Q: How many amino acids make up the binding pocket?</h4>
+                <p>The active site of influenza neuraminidase contains approximately <strong style="color:var(--white)">8–12 key residues</strong> within 4 Å of Tamiflu. Key ones include: <strong style="color:var(--amber)">R118, R152, R224, E119, R292, R371, Y406</strong> (numbering may vary by strain). These arginine-rich interactions are critical for binding.</p>
+ 
+                <h4>Q: How many hydrogen bonds does Tamiflu form?</h4>
+                <p>Oseltamivir (OSE) forms approximately <strong style="color:var(--white)">6–10 hydrogen bonds</strong> with neuraminidase residues. Yes — this is enough to hold the drug firmly in place, resulting in a dissociation constant (Ki) in the nanomolar range, meaning very tight binding.</p>
+ 
+                <h4>Q: 1HSG (HIV protease) vs. flu binding pocket</h4>
+                <ul>
+                  <li>HIV protease has a <strong>symmetric, tunnel-shaped</strong> pocket lined by two identical protein chains (homodimer)</li>
+                  <li>Neuraminidase binding pocket is <strong>funnel-shaped</strong> and highly polar with many arginine residues</li>
+                  <li>HIV protease pocket is more <strong>hydrophobic</strong> — antiretroviral drugs tend to be more lipophilic</li>
+                  <li>Both pockets are conserved across viral strains, making them excellent drug targets</li>
+                </ul>
+ 
+                <h4>Q: What happens if R292 is mutated?</h4>
+                <ul>
+                  <li>R292K mutation (arginine → lysine) is a known <strong>Tamiflu resistance</strong> mutation</li>
+                  <li>R292 forms a critical salt bridge/hydrogen bond with the carboxylate group of Tamiflu</li>
+                  <li>The mutation disrupts this interaction → <strong>drug binds ~200× more weakly</strong></li>
+                  <li>This is how drug-resistant flu strains arise — a single amino acid change can render a drug ineffective</li>
+                </ul>
+ 
+                <h4>Extra: Zanamivir (Relenza)</h4>
+                <ul>
+                  <li>Zanamivir PDB structure: search for <strong style="color:var(--amber)">1NNC</strong> or <strong style="color:var(--amber)">2BAT</strong> (neuraminidase + zanamivir)</li>
+                  <li>Zanamivir has a guanidinium group instead of Tamiflu's amino group — this forms stronger salt bridges</li>
+                  <li>Unlike Tamiflu, zanamivir is inhaled (not oral) because it's too polar to be absorbed by the gut</li>
+                </ul>
+ 
+                <div class="solution-note">
+                  <strong>PyMOL tip:</strong> To see hydrogen bonds as dashed lines, use <code style="font-family:var(--mono);font-size:0.8rem">distance hbonds, tamiflu, binding_pocket, mode=2</code>. Mode 2 finds potential H-bond donors and acceptors automatically.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+ 
+      </div>
+    </div>
+
+    <!-- ═══ TASK 3 — PROTEIN STRUCTURE ═══ -->
+    <div class="task-card" id="task3">
+      <div class="task-header">
+        <div class="task-number">03</div>
+        <div class="task-meta">
+          <div class="task-badge badge-protein">🔮 Štruktúra proteínov</div>
+          <div class="task-title">DIZAJN A POROVNANIE<br>ŠTRUKTÚRY</div>
+          <div class="task-subtitle">Odhadovaný čas: 35–45 minút &nbsp;·&nbsp; Náročnosť: ⭐⭐⭐</div>
+        </div>
+      </div>
+      <div class="task-body">
+        <p class="lead">Proteíny sú stroje života. Prenášajú kyslík v krvi, bojujú s vírusmi, trávia jedlo a stavajú všetko, čo vaše telo potrebuje. V tejto úlohe sa stanete štrukturálnymi biológmi — porovnáte rovnaký typ proteínu z rôznych organizmov a zistíte, čo ich robí odlišnými.</p>
+
+        <div class="objectives-box purple">
+          <h4>🎯 CIELE ÚLOHY</h4>
+          <ul>
+            <li>Pochopiť sekundárnu štruktúru: α-helixy a β-skladané listy</li>
+            <li>Naučiť sa zarovnať (align) a porovnať dve štruktúry proteínov</li>
+            <li>Identifikovať konzervované oblasti (časti, ktoré sa evolúciou nemenia)</li>
+            <li>Detegovať štrukturálne rozdiely medzi homológnymi proteínmi</li>
+            <li>Vytvoriť profesionálny porovnávací obrázok</li>
+          </ul>
+        </div>
+
+        <div class="two-col">
+          <div>
+            <h3>Štruktúry na porovnanie</h3>
+            <div class="pdb-pill">2LZM <span>T4 Lyzozým (bakteriofág)</span></div>
+            <div class="pdb-pill">1AKI <span>Lyzozým z vaječného bielka</span></div>
+            <div class="pdb-pill">1LYZ <span>Ľudský lyzozým</span></div>
+            <p style="margin-top:1rem; font-size:0.85rem; color:var(--text-dim)">Lyzozým je enzým vo vašich slzách a slinách, ktorý ničí baktérie. Existuje takmer v každom živom organizme — porovnajte ich!</p>
+          </div>
+          <div>
+            <h3>Veda v pozadí</h3>
+            <p style="font-size:0.88rem">Aj keď lyzozým z kuraťa a človeka majú rôzne sekvencie, majú <strong>veľmi podobnú 3D štruktúru</strong>, pretože robia rovnakú prácu. Toto je evolúcia v praxi — štruktúra je konzervovanejšia než sekvencia!</p>
+          </div>
+        </div>
+
+        <hr class="task-sep">
+        <h3>Inštrukcie krok za krokom</h3>
+        <div class="steps">
+          <div class="step">
+            <div class="step-protein step-num" style="background:var(--purple)">1</div>
+            <div class="step-content">
+              <h4>Načítajte dve štruktúry lyzozýmu</h4>
+              <p>Načítajte ľudský aj kurací lyzozým do PyMOLu súčasne.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-protein step-num" style="background:var(--purple)">2</div>
+            <div class="step-content">
+              <h4>Zarovnajte štruktúry</h4>
+              <p>Použite nástroj "align", aby ste položili jednu štruktúru presne na druhú.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-protein step-num" style="background:var(--purple)">3</div>
+            <div class="step-content">
+              <h4>Vizualizujte sekundárnu štruktúru</h4>
+              <p>Zobrazte helixy a listy. Ofarbite oba proteíny inak, aby ste videli rozdiely.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-protein step-num" style="background:var(--purple)">4</div>
+            <div class="step-content">
+              <h4>Nájdite aktívne miesto</h4>
+              <p>Aktívne miesto lyzozýmu obsahuje Glutamát 35 a Aspartát 52. Nájdite ich v oboch štruktúrach.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-protein step-num" style="background:var(--purple)">5</div>
+            <div class="step-content">
+              <h4>Ofarbite podľa B-faktora (flexibility)</h4>
+              <p>B-faktor nám hovorí, ktoré časti proteínu sú najviac pohyblivé. Ofarbite proteín podľa tejto vlastnosti.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-protein step-num" style="background:var(--purple)">6</div>
+            <div class="step-content">
+              <h4>Vytvorte porovnávací obrázok</h4>
+              <p>Vytvorte krásny porovnávací obrázok vhodný pre vedeckú prezentáciu.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-block">
+<code><span class="code-comment">## ÚLOHA 3 — Porovnanie štruktúry proteínov ##</span>
+
+<span class="code-comment"># Krok 1: Načítaj dve štruktúry lyzozýmu (človek vs. kura)</span>
+<span class="code-cmd">fetch</span> <span class="code-str">1LYZ</span>   <span class="code-comment"># Ľudský lyzozým</span>
+<span class="code-cmd">fetch</span> <span class="code-str">1AKI</span>   <span class="code-comment"># Kurací lyzozým</span>
+<span class="code-cmd">remove</span> solvent
+<span class="code-cmd">bg_color</span> black
+
+<span class="code-comment"># Krok 2: Zarovnaj kura k človeku (RMSD hovorí, ako sú si podobné!)</span>
+<span class="code-cmd">align</span> <span class="code-str">1AKI</span>, <span class="code-str">1LYZ</span>
+<span class="code-comment"># Pozri si hodnotu RMSD v termináli — čím nižšia, tým vyššia podoba</span>
+
+<span class="code-comment"># Krok 3: Zobraz ako cartoon, ofarbi každý proteín inak</span>
+<span class="code-cmd">show</span> cartoon
+<span class="code-cmd">color</span> cyan,    <span class="code-str">1LYZ</span>   <span class="code-comment"># Človek = azúrová</span>
+<span class="code-cmd">color</span> orange,  <span class="code-str">1AKI</span>   <span class="code-comment"># Kura = oranžová</span>
+
+<span class="code-comment"># Krok 4: Zvýrazni aminokyseliny v katalytickom aktívnom mieste</span>
+<span class="code-comment"># Glu35 a Asp52 sú kľúčové pre funkciu lyzozýmu</span>
+<span class="code-cmd">select</span> active_site_human,   (<span class="code-str">1LYZ</span> and resi <span class="code-num">35</span>+<span class="code-num">52</span>)
+<span class="code-cmd">select</span> active_site_chicken, (<span class="code-str">1AKI</span> and resi <span class="code-num">35</span>+<span class="code-num">52</span>)
+<span class="code-cmd">show</span> sticks, active_site_human
+<span class="code-cmd">show</span> sticks, active_site_chicken
+<span class="code-cmd">color</span> red,    active_site_human
+<span class="code-cmd">color</span> yellow, active_site_chicken
+<span class="code-cmd">label</span> active_site_human  and name CA, "%s%s" % (resn, resi)
+<span class="code-cmd">label</span> active_site_chicken and name CA, "%s%s" % (resn, resi)
+
+<span class="code-comment"># Krok 5: Ofarbi podľa B-faktora (flexibilita) — červená=flexibilné, modrá=rigidné</span>
+<span class="code-cmd">hide</span> cartoon, <span class="code-str">1LYZ</span>
+<span class="code-cmd">show</span> cartoon, <span class="code-str">1LYZ</span>
+<span class="code-cmd">spectrum</span> b, blue_white_red, <span class="code-str">1LYZ</span>
+
+<span class="code-comment"># Krok 6: Vytvor finálny obrázok</span>
+<span class="code-cmd">hide</span> everything
+<span class="code-cmd">show</span> cartoon
+<span class="code-cmd">color</span> cyan,   <span class="code-str">1LYZ</span>
+<span class="code-cmd">color</span> orange, <span class="code-str">1AKI</span>
+<span class="code-cmd">show</span> sticks, active_site_human or active_site_chicken
+<span class="code-cmd">set</span> cartoon_fancy_helices, <span class="code-num">1</span>
+<span class="code-cmd">set</span> depth_cue, <span class="code-num">1</span>
+<span class="code-cmd">bg_color</span> white
+<span class="code-cmd">ray</span> <span class="code-num">2400</span>, <span class="code-num">1350</span>
+<span class="code-cmd">png</span> porovnanie_lyzozymov.png</code>
+        </div>
+
+        <div class="challenge-banner purple">
+          <h4>🔮 MYSLI AKO ŠTRUKTURÁLNY BIOLÓG — OTÁZKY NA ANALÝZU</h4>
+          <p style="font-size:0.88rem; color:var(--text)">Po vašom štrukturálnom porovnaní:</p>
+          <ul style="list-style:none; margin-top:0.8rem; display:flex; flex-direction:column; gap:0.5rem;">
+            <li style="font-size:0.87em; color:var(--text-dim)">❓ &nbsp;Aká je hodnota RMSD po zarovnaní? Čo toto číslo znamená?</li>
+            <li style="font-size:0.87em; color:var(--text-dim)">❓ &nbsp;Sú aminokyseliny aktívneho miesta (Glu35 a Asp52) v presne rovnakej pozícii v oboch proteínoch?</li>
+            <li style="font-size:0.87em; color:var(--text-dim)">❓ &nbsp;Ktoré oblasti proteínu sú najviac flexibilné (vysoký B-faktor, červená)? Ktoré sú najpevnejšie (modrá)?</li>
+            <li style="font-size:0.87em; color:var(--text-dim)">❓ &nbsp;Načítajte lyzozým z fága T4 (2LZM). Podobá sa vírusový lyzozým tomu ľudskému?</li>
+            <li style="font-size:0.87em; color:var(--text-dim)">⭐ &nbsp;<strong>Extra:</strong> Dokážete pridať tretí lyzozým (z baktérií, PDB: 1DPX) a urobiť trojité zarovnanie?</li>
+          </ul>
+        </div>
+        <!-- SOLUTION TOGGLE — TASK 3 -->
+        <div class="solution-wrapper">
+          <button class="solution-btn purple" onclick="toggleSolution('sol3', this)">
+            <i class="btn-arrow">▶</i> REVEAL SOLUTION
+          </button>
+          <div class="solution-panel" id="sol3">
+            <div class="solution-inner">
+              <div class="solution-header purple">🔮 TASK 3 — SOLUTION &amp; EXPECTED ANSWERS</div>
+              <div class="solution-body">
+                <h4>Q: What is the RMSD value after alignment?</h4>
+                <p>The RMSD between human (1LYZ) and chicken (1AKI) lysozyme after alignment is typically <strong style="color:var(--white)">~1.0–1.5 Å</strong>. This is remarkably low — it means the two proteins adopt almost exactly the same 3D fold despite having ~60% sequence identity. RMSD = Root Mean Square Deviation; lower values = more structurally similar.</p>
+
+                <h4>Q: Are Glu35 and Asp52 in the same position?</h4>
+                <ul>
+                  <li><strong>Yes</strong> — these catalytic residues are almost perfectly superimposed in both proteins</li>
+                  <li>This is a hallmark of <strong>convergent structural conservation</strong> — evolution preserves the active site geometry even when the rest of the protein diverges</li>
+                  <li>The distance between their carboxyl groups should be ~6 Å in both structures (required for catalysis)</li>
+                </ul>
+
+                <h4>Q: Which regions are flexible vs. rigid?</h4>
+                <ul>
+                  <li><strong>Most rigid (blue, low B-factor):</strong> The core β-sheet region, buried hydrophobic residues, and the active site cleft</li>
+                  <li><strong>Most flexible (red, high B-factor):</strong> Surface loops, the C-terminus, and exposed regions — especially loops 46–54 and 66–77</li>
+                  <li>Flexibility in loops allows the protein to accommodate substrate binding through induced fit</li>
+                </ul>
+
+                <h4>Q: T4 phage lysozyme (2LZM) vs. human lysozyme</h4>
+                <ul>
+                  <li>T4 lysozyme is <strong>larger</strong> (164 residues vs ~129) and has an extra N-terminal domain</li>
+                  <li>Despite very low sequence identity (~15%), the <strong>C-terminal domain is structurally similar</strong> to c-type lysozymes</li>
+                  <li>The RMSD after alignment will be higher (~3–4 Å), reflecting their evolutionary distance</li>
+                  <li>This demonstrates that <strong>structure is conserved far beyond sequence</strong> in evolution</li>
+                </ul>
+
+                <h4>Extra: Triple alignment (1LYZ + 1AKI + 1DPX)</h4>
+                <ul>
+                  <li>After aligning all three, you'll see a clear <strong>core structural motif</strong> shared across all lysozymes</li>
+                  <li>The bacterial lysozyme will show the most deviation in its loop regions</li>
+                  <li>Command: <code style="font-family:var(--mono);color:var(--purple);font-size:0.82rem">fetch 1DPX</code> then <code style="font-family:var(--mono);color:var(--purple);font-size:0.82rem">align 1DPX, 1LYZ</code></li>
+                </ul>
+
+                <div class="solution-note">
+                  <strong>PyMOL tip:</strong> To display fancy helices (ribbon-style), use <code style="font-family:var(--mono);font-size:0.8rem">set cartoon_fancy_helices, 1</code>. To show β-sheets as arrows: <code style="font-family:var(--mono);font-size:0.8rem">set cartoon_flat_sheets, 1</code>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ════════════════════════════════════════
+     BONUS — ALPHAFOLD
+════════════════════════════════════════ -->
+<div class="bonus-section" id="bonus">
+  <div class="bonus-inner">
+    <div class="section-label">// BONUS — Keď sa AI stretne so štrukturálnou biológiou</div>
+    <div class="bonus-header">
+      <div class="bonus-star">✦</div>
+      <div>
+        <h2>ALPHAFOLD<br>STRETÁVA PyMOL</h2>
+        <p style="color:var(--text-dim)">Najrevolučnejší objav AI v 21. storočí — teraz vo vašich rukách.</p>
+      </div>
+    </div>
+
+    <div class="task-card" style="border-color: rgba(0,184,148,0.4); opacity:1; transform:none;">
+      <div class="task-header" style="background: linear-gradient(135deg, rgba(0,184,148,0.08), transparent);">
+        <div class="task-number" style="color:var(--teal)">⭐</div>
+        <div class="task-meta">
+          <div class="task-badge badge-alpha">🤖 AlphaFold + PyMOL</div>
+          <div class="task-title" style="color:var(--white)">PREDIKCIA TVARU<br>AKÉHOKOĽVEK PROTEÍNU</div>
+          <div class="task-subtitle">Odhadovaný čas: 30–40 minút &nbsp;·&nbsp; Náročnosť: ⭐⭐⭐⭐</div>
+        </div>
+      </div>
+      <div class="task-body">
+        <p class="lead">V roku 2021 AlphaFold od DeepMind vyriešil 50-ročnú vedeckú výzvu predpovedaním 3D štruktúry proteínu len z jeho sekvencie. Dnes použijete databázu AlphaFold a porovnáte jej predpovede s experimentálnymi štruktúrami.</p>
+
+        <div class="objectives-box teal">
+          <h4>🎯 CIELE ÚLOHY</h4>
+          <ul>
+            <li>Pochopiť, čo je AlphaFold a prečo spôsobil revolúciu</li>
+            <li>Stiahnuť predpovedanú štruktúru z databázy AlphaFold</li>
+            <li>Porovnať AI-predpovedanú štruktúru s experimentálne overenou</li>
+            <li>Interpretovať skóre spoľahlivosti (pLDDT) — čomu AI "verí"?</li>
+            <li>Oceniť rozdiel medzi predpoveďou a experimentálnym dôkazom</li>
+          </ul>
+        </div>
+
+        <h3 style="margin-top:2rem">Pozadie: Čo je AlphaFold?</h3>
+        <p>Funkcia každého proteínu je určená jeho 3D tvarom. Ale <strong>zistiť tento tvar experimentálne</strong> (röntgenovou kryštalografiou) trvá mesiace a stojí milióny dolárov.</p>
+        <p>AlphaFold je AI, ktorá dokáže predpovedať 3D štruktúru proteínu z jeho aminokyselinovej sekvencie za <strong>pár minút a zadarmo</strong>. Predpovedala už vyše <strong>200 miliónov štruktúr</strong> — prakticky každý známy proteín.</p>
+
+        <div class="af-grid">
+          <div class="af-card">
+            <div class="af-card-num">KROK 01</div>
+            <h3>Získajte AlphaFold štruktúru</h3>
+            <p style="font-size:0.85rem; color:var(--text-dim)">Navštívte <strong style="color:var(--teal)">alphafold.ebi.ac.uk</strong> a vyhľadajte <strong>human lysozyme</strong> (UniProt: P61626). Stiahnite si PDB súbor.</p>
+          </div>
+          <div class="af-card">
+            <div class="af-card-num">KROK 02</div>
+            <h3>Načítajte oba do PyMOLu</h3>
+            <p style="font-size:0.85rem; color:var(--text-dim)">Načítajte reálny ľudský lyzozým (1LYZ) a otvorte stiahnutý AlphaFold model cez File → Open.</p>
+          </div>
+          <div class="af-card">
+            <div class="af-card-num">KROK 03</div>
+            <h3>Zarovnajte a porovnajte</h3>
+            <p style="font-size:0.85rem; color:var(--text-dim)">Použite príkaz <code style="font-family:var(--mono);color:var(--teal);font-size:0.8rem">align</code>. Aké je RMSD? Ako veľmi sa AI trafila?</p>
+          </div>
+          <div class="af-card">
+            <div class="af-card-num">KROK 04</div>
+            <h3>Vizualizujte istotu</h3>
+            <p style="font-size:0.85rem; color:var(--text-dim)">AlphaFold farbí aminokyseliny podľa istoty (pLDDT). Modrá = vysoká istota, červená = nízka. Niektoré časti proteínu AI nedokáže predpovedať dobre.</p>
+          </div>
+        </div>
+
+        <div class="code-block" style="margin-top:2rem">
+<code><span class="code-comment">## BONUS — AlphaFold vs. Experiment ##</span>
+
+<span class="code-comment"># Krok 1: Načítaj experimentálny ľudský lyzozým</span>
+<span class="code-cmd">fetch</span> <span class="code-str">1LYZ</span>
+<span class="code-cmd">remove</span> solvent
+<span class="code-cmd">color</span> cyan, <span class="code-str">1LYZ</span>
+<span class="code-cmd">show</span> cartoon, <span class="code-str">1LYZ</span>
+
+<span class="code-comment"># Krok 2: Načítaj predpoveď AlphaFold (nahraď názvom svojho súboru)</span>
+<span class="code-comment"># File → Open → vyber AF-P61626-F1-model_v4.pdb</span>
+
+<span class="code-comment"># Krok 3: Zarovnaj AlphaFold k experimentu</span>
+<span class="code-cmd">align</span> alphafold_model, <span class="code-str">1LYZ</span>
+<span class="code-comment"># RMSD pod 1.5 Å znamená excelentnú predpoveď.</span>
+
+<span class="code-comment"># Krok 4: Ofarbi odlišne pre porovnanie</span>
+<span class="code-cmd">color</span> cyan,    <span class="code-str">1LYZ</span>
+<span class="code-cmd">color</span> orange,  alphafold_model
+
+<span class="code-comment"># Krok 5: Ofarbi AlphaFold podľa jeho istoty (skóre pLDDT)</span>
+<span class="code-comment"># V AlphaFold súboroch je v stĺpci B-factor uložené pLDDT (0-100)</span>
+<span class="code-cmd">spectrum</span> b, blue_white_red, alphafold_model
+<span class="code-comment"># Modré oblasti = istá predpoveď, Červené = neistá</span>
+
+<span class="code-comment"># Krok 6: Nájdi oblasti, kde sa predpoveď najviac líši</span>
+<span class="code-cmd">select</span> neiste, alphafold_model and b < <span class="code-num">50</span>
+<span class="code-cmd">show</span> spheres, neiste
+<span class="code-cmd">color</span> red, neiste</code>
+        </div>
+
+        <div class="challenge-banner" style="border-color: rgba(0,184,148,0.35); background: linear-gradient(135deg, rgba(0,184,148,0.08), rgba(0,229,255,0.05));">
+          <h4 style="color:var(--teal)">🤖 ZAMYSLITE SA NAD BUDÚCNOSŤOU VEDY</h4>
+          <p style="font-size:0.88rem; color:var(--text)">Otázky na diskusiu:</p>
+          <ul style="list-style:none; margin-top:0.8rem; display:flex; flex-direction:column; gap:0.5rem;">
+            <li style="font-size:0.87em; color:var(--text-dim)">🌍 &nbsp;AlphaFold predpovedal 200 miliónov štruktúr za rok. Ako dlho by to trvalo ľuďom v laboratóriu?</li>
+            <li style="font-size:0.87em; color:var(--text-dim)">❓ &nbsp;Čo nám hovorí RMSD o presnosti AI?</li>
+            <li style="font-size:0.87em; color:var(--text-dim)">🔬 &nbsp;Ktoré časti proteínu predpovedá AlphaFold najhoršie? Prečo sú ohybné slučky problém?</li>
+            <li style="font-size:0.87em; color:var(--text-dim)">💊 &nbsp;Ako by mohol AlphaFold zmeniť vývoj nových liekov?</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Quick Reference -->
+<section>
+  <div class="section-label">// Rýchly prehľad</div>
+  <h2>ŤAHÁK PRÍKAZOV</h2>
+  <p>Majte toto otvorené počas práce. Všetky príkazy na jednom mieste.</p>
+
+  <div class="code-block" style="margin-top:2rem">
+<code><span class="code-comment">## ── NAČÍTANIE A NASTAVENIE ─────────────────────────────────────────── ##</span>
+<span class="code-cmd">fetch</span> XXXX               <span class="code-comment"># Načíta štruktúru podľa PDB ID</span>
+<span class="code-cmd">remove</span> solvent           <span class="code-comment"># Vymaže molekuly vody</span>
+<span class="code-cmd">reinitialize</span>            <span class="code-comment"># Vymaže všetko a začne odznova</span>
+<span class="code-cmd">bg_color</span> black          <span class="code-comment"># Nastaví čierne (alebo biele) pozadie</span>
+
+<span class="code-comment">## ── REPREZENTÁCIE ──────────────────────────────────────────────────── ##</span>
+<span class="code-cmd">show</span> cartoon            <span class="code-comment"># Stuhový model (sekundárna štruktúra)</span>
+<span class="code-cmd">show</span> sticks             <span class="code-comment"># Väzby ako paličky</span>
+<span class="code-cmd">show</span> surface            <span class="code-comment"># Molekulárny povrch</span>
+<span class="code-cmd">show</span> spheres            <span class="code-comment"># Atómy ako gule</span>
+<span class="code-cmd">hide</span> everything         <span class="code-comment"># Skryje všetko</span>
+
+<span class="code-comment">## ── FARBY ──────────────────────────────────────────────────────────── ##</span>
+<span class="code-cmd">color</span> cyan, chain A      <span class="code-comment"># Ofarbi reťazec A na azúrovo</span>
+<span class="code-cmd">util.cbc</span>                <span class="code-comment"># Každý reťazec inou farbou</span>
+<span class="code-cmd">util.cbaw</span>               <span class="code-comment"># Farbenie podľa prvkov (CPK)</span>
+<span class="code-cmd">spectrum</span> b, blue_white_red  <span class="code-comment"># Ofarbi podľa B-faktora (pohyblivosti)</span>
+
+<span class="code-comment">## ── VÝBERY ─────────────────────────────────────────────────────────── ##</span>
+<span class="code-cmd">select</span> meno, chain A                    <span class="code-comment"># Vyber reťazec A</span>
+<span class="code-cmd">select</span> meno, resn ATP                   <span class="code-comment"># Vyber podľa názvu (napr. ATP)</span>
+<span class="code-cmd">select</span> meno, resi 35+52                 <span class="code-comment"># Vyber podľa čísla aminokyseliny</span>
+<span class="code-cmd">select</span> meno, byres (X within 4.0 of Y)  <span class="code-comment"># Vyber aminokyseliny blízko objektu Y</span>
+
+<span class="code-comment">## ── ANALÝZA ────────────────────────────────────────────────────────── ##</span>
+<span class="code-cmd">align</span> obj1, obj2         <span class="code-comment"># Položí dve štruktúry na seba</span>
+<span class="code-cmd">distance</span> d1, sel1, sel2  <span class="code-comment"># Odmeria vzdialenosť</span>
+<span class="code-cmd">distance</span> hb, A, B, mode=2 <span class="code-comment"># Nájdi vodíkové väzby</span>
+<span class="code-cmd">label</span> sel, "%s%s"%(resn,resi) <span class="code-comment"># Pridá popisky (názov+číslo)</span>
+
+<span class="code-comment">## ── VÝSTUP ─────────────────────────────────────────────────────────── ##</span>
+<span class="code-cmd">ray</span> <span class="code-num">1920</span>, <span class="code-num">1080</span>          <span class="code-comment"># Kvalitné vykreslenie</span>
+<span class="code-cmd">png</span> subor.png            <span class="code-comment"># Uloží obrázok</span></code>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <p>PyMOL Workshop © 2025 &nbsp;·&nbsp; Vytvorené pre DNA deň 2026</p>
+  <div class="footer-links">
+    <a href="https://pymol.org" target="_blank">PyMOL →</a>
+    <a href="https://rcsb.org" target="_blank">RCSB PDB →</a>
+    <a href="https://alphafold.ebi.ac.uk" target="_blank">AlphaFold DB →</a>
+    <a href="https://www.uniprot.org" target="_blank">UniProt →</a>
+  </div>
+</footer>
+
+<script>
+// ── Progress bar ──
+window.addEventListener('scroll', () => {
+  const scrolled = window.scrollY;
+  const total = document.body.scrollHeight - window.innerHeight;
+  const pct = (scrolled / total) * 100;
+  document.getElementById('progress').style.width = pct + '%';
+});
+
+// ── Scroll reveal for task cards ──
+const cards = document.querySelectorAll('.task-card');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+cards.forEach(c => observer.observe(c));
+
+// ── Animated particle canvas ──
+const canvas = document.getElementById('hero-canvas');
+const ctx = canvas.getContext('2d');
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+resize();
+window.addEventListener('resize', resize);
+
+const nodes = [];
+const N = 70;
+for (let i = 0; i < N; i++) {
+  nodes.push({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    vx: (Math.random() - 0.5) * 0.4,
+    vy: (Math.random() - 0.5) * 0.4,
+    r: Math.random() * 2 + 1
+  });
+}
+
+// ── Solution toggle ──
+function toggleSolution(id, btn) {
+  const panel = document.getElementById(id);
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  btn.classList.toggle('open', !isOpen);
+  btn.querySelector('.btn-arrow').style.transform = isOpen ? '' : 'rotate(90deg)';
+  const label = btn.querySelector('.btn-arrow').nextSibling;
+  // Update button text
+  btn.childNodes[btn.childNodes.length - 1].textContent = isOpen ? ' REVEAL SOLUTION' : ' HIDE SOLUTION';
+}
+
+
+function drawFrame() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  nodes.forEach(n => {
+    n.x += n.vx; n.y += n.vy;
+    if (n.x < 0 || n.x > canvas.width)  n.vx *= -1;
+    if (n.y < 0 || n.y > canvas.height) n.vy *= -1;
+    ctx.beginPath();
+    ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(0,229,255,0.8)';
+    ctx.fill();
+  });
+  // Draw edges
+  for (let i = 0; i < N; i++) {
+    for (let j = i + 1; j < N; j++) {
+      const dx = nodes[i].x - nodes[j].x;
+      const dy = nodes[i].y - nodes[j].y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist < 120) {
+        ctx.beginPath();
+        ctx.moveTo(nodes[i].x, nodes[i].y);
+        ctx.lineTo(nodes[j].x, nodes[j].y);
+        ctx.strokeStyle = `rgba(0,229,255,${0.6 * (1 - dist/120)})`;
+        ctx.lineWidth = 0.6;
+        ctx.stroke();
+      }
+    }
+  }
+  requestAnimationFrame(drawFrame);
+}
+drawFrame();
+</script>
+</body>
+</html>
