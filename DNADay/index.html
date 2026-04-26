@@ -234,7 +234,7 @@
 
   .basics-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
     margin-top: 3rem;
   }
@@ -324,7 +324,7 @@
 
   .theory-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
     margin-top: 2rem;
   }
@@ -1036,163 +1036,8 @@
 <section id="theory">
   <div class="section-label">// 01 — Teória</div>
   <h2>TYPY VÄZIEB<br>V MOLEKULÁCH</h2>
-  <!-- <p>Pred tým, než začneme merať vzdialenosti v PyMOLe, musíme vedieť, čo vlastne hľadáme.
-    Každý kontakt medzi atómami má svoju typickú dĺžku a silu. Tieto hodnoty budeme využívať pri úlohách.</p> -->
 
-  <!-- Bond types table -->
   <div class="theory-grid" style="margin-top:2.5rem">
-
-    <!-- <div class="theory-card cyan-card">
-      <div class="card-icon">⚡</div>
-      <h3>Kovalentné väzby</h3>
-      <p style="font-size:0.87rem; color:var(--text-dim); margin-bottom:1rem">Silné väzby, ktoré držia atómy pohromade v jednej molekule. Elektróny sú zdieľané.</p>
-      <table class="bond-table">
-        <thead>
-          <tr>
-            <th>VÄZBA</th>
-            <th>DĹŽKA</th>
-            <th>ENERGIA</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>C–C (jednoduchá)</td>
-            <td><span class="val cyan">1.54 Å</span></td>
-            <td><span class="val" style="color:var(--text-dim)">347 kJ/mol</span></td>
-          </tr>
-          <tr>
-            <td>C=C (dvojitá)</td>
-            <td><span class="val cyan">1.34 Å</span></td>
-            <td><span class="val" style="color:var(--text-dim)">614 kJ/mol</span></td>
-          </tr>
-          <tr>
-            <td>C–N</td>
-            <td><span class="val cyan">1.47 Å</span></td>
-            <td><span class="val" style="color:var(--text-dim)">305 kJ/mol</span></td>
-          </tr>
-          <tr>
-            <td>C–O</td>
-            <td><span class="val cyan">1.43 Å</span></td>
-            <td><span class="val" style="color:var(--text-dim)">360 kJ/mol</span></td>
-          </tr>
-          <tr>
-            <td>O–H</td>
-            <td><span class="val cyan">0.96 Å</span></td>
-            <td><span class="val" style="color:var(--text-dim)">459 kJ/mol</span></td>
-          </tr>
-          <tr>
-            <td>N–H</td>
-            <td><span class="val cyan">1.01 Å</span></td>
-            <td><span class="val" style="color:var(--text-dim)">391 kJ/mol</span></td>
-          </tr>
-        </tbody>
-      </table>
-      <div style="margin-top:0.8rem; font-size:0.78rem; color:var(--text-dim)">
-        <span class="badge-inline badge-strong">SILNÉ</span> V PyMOLe viditeľné ako paličky (sticks)
-      </div>
-    </div>
-
-    <div class="theory-card amber-card">
-      <div class="card-icon">💧</div>
-      <h3>Vodíkové väzby</h3>
-      <p style="font-size:0.87rem; color:var(--text-dim); margin-bottom:1rem">Slabšie nekovalentné väzby. Donor (N–H alebo O–H) zdieľa vodík s akceptorom (N alebo O).</p>
-      <table class="bond-table">
-        <thead>
-          <tr>
-            <th>TYP</th>
-            <th>DĹŽKA D···A</th>
-            <th>SILA</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>N–H···O (silná)</td>
-            <td><span class="val amber">2.8–3.0 Å</span></td>
-            <td><span class="val" style="color:var(--text-dim)">20–40 kJ/mol</span></td>
-          </tr>
-          <tr>
-            <td>O–H···O (voda)</td>
-            <td><span class="val amber">2.7–2.9 Å</span></td>
-            <td><span class="val" style="color:var(--text-dim)">12–25 kJ/mol</span></td>
-          </tr>
-          <tr>
-            <td>N–H···N (DNA bázy)</td>
-            <td><span class="val amber">2.9–3.1 Å</span></td>
-            <td><span class="val" style="color:var(--text-dim)">8–20 kJ/mol</span></td>
-          </tr>
-          <tr>
-            <td>C–H···O (slabá)</td>
-            <td><span class="val amber">3.0–3.5 Å</span></td>
-            <td><span class="val" style="color:var(--text-dim)">2–8 kJ/mol</span></td>
-          </tr>
-        </tbody>
-      </table>
-      <div style="margin-top:0.8rem; font-size:0.78rem; color:var(--text-dim)">
-        <span class="badge-inline badge-weak">SLABÉ</span> V PyMOLe: <code style="font-family:var(--mono);font-size:0.75rem;color:var(--teal)">distance mode=2</code>, hranica <strong style="color:var(--white)">3.5 Å</strong>
-      </div>
-    </div>
-
-    <div class="theory-card teal-card">
-      <div class="card-icon">🌀</div>
-      <h3>Hydrofóbne interakcie</h3>
-      <p style="font-size:0.87rem; color:var(--text-dim); margin-bottom:1rem">Nepolárne časti molekúl sa „boja vody" a zbierajú sa spolu. Nie sú to väzby v klasickom zmysle — ide o entropický efekt.</p>
-      <table class="bond-table">
-        <thead>
-          <tr>
-            <th>KONTAKT</th>
-            <th>TYPICKÁ VZDIALENOSŤ</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>C···C (van der Waals)</td>
-            <td><span class="val teal">3.4–4.0 Å</span></td>
-          </tr>
-          <tr>
-            <td>Aromatický π–π stack</td>
-            <td><span class="val teal">3.5–3.8 Å</span></td>
-          </tr>
-          <tr>
-            <td>CH–π interakcia</td>
-            <td><span class="val teal">3.5–4.5 Å</span></td>
-          </tr>
-        </tbody>
-      </table>
-      <div style="margin-top:0.8rem; font-size:0.78rem; color:var(--text-dim)">
-        <span class="badge-inline badge-med">STREDNÉ</span> V PyMOLe: hľadajte kontakty do <strong style="color:var(--white)">4.0–4.5 Å</strong>
-      </div>
-    </div>
-
-    <div class="theory-card coral-card">
-      <div class="card-icon">⚡</div>
-      <h3>Elektrostatické interakcie</h3>
-      <p style="font-size:0.87rem; color:var(--text-dim); margin-bottom:1rem">Opačne nabité skupiny sa priťahujú. Soľné mosty v proteínoch a DNA sú kľúčové pre stabilitu.</p>
-      <table class="bond-table">
-        <thead>
-          <tr>
-            <th>TYP</th>
-            <th>TYPICKÁ VZDIALENOSŤ</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Soľný mostík (N<sup>+</sup>···O<sup>-</sup>)</td>
-            <td><span class="val coral">2.5–4.0 Å</span></td>
-          </tr>
-          <tr>
-            <td>Ion–dipól</td>
-            <td><span class="val coral">2.0–3.5 Å</span></td>
-          </tr>
-          <tr>
-            <td>Dipól–dipól</td>
-            <td><span class="val coral">3.0–5.0 Å</span></td>
-          </tr>
-        </tbody>
-      </table>
-      <div style="margin-top:0.8rem; font-size:0.78rem; color:var(--text-dim)">
-        <span class="badge-inline badge-strong">SILNÉ</span> Dôležité pri väzbe liečiv — napr. Tamiflu a arginíny!
-      </div>
-    </div> -->
 
     <div class="theory-card purple-card">
       <div class="card-icon">🔢</div>
